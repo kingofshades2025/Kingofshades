@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Send, CheckCircle2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { submitContact } from "@/app/actions/contact";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   if (sent) {
     return (
@@ -18,8 +21,8 @@ export function ContactForm() {
           Thanks — we'll be in touch!
         </h3>
         <p className="mt-2 max-w-sm text-sm text-mist">
-          This is a Phase 1 prototype, so no message was actually sent. In
-          production this would reach our team within one business hour.
+          Your message was sent successfully. Check your inbox for a confirmation
+          email — we'll respond within one business day.
         </p>
         <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>
           Send another message
@@ -30,23 +33,36 @@ export function ContactForm() {
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSent(true);
+      action={(formData) => {
+        setError(null);
+        startTransition(async () => {
+          const result = await submitContact(formData);
+          if (result.success) {
+            setSent(true);
+          } else {
+            setError(result.error);
+          }
+        });
       }}
       className="grid gap-5 sm:grid-cols-2"
     >
       <Field label="Full name">
-        <Input required placeholder="Jordan Carter" />
+        <Input name="name" required placeholder="Jordan Carter" disabled={isPending} />
       </Field>
       <Field label="Phone number">
-        <Input type="tel" placeholder="(555) 123-4567" />
+        <Input name="phone" type="tel" placeholder="(555) 123-4567" disabled={isPending} />
       </Field>
       <Field label="Email address" className="sm:col-span-2">
-        <Input type="email" required placeholder="you@email.com" />
+        <Input
+          name="email"
+          type="email"
+          required
+          placeholder="you@email.com"
+          disabled={isPending}
+        />
       </Field>
       <Field label="Service of interest" className="sm:col-span-2">
-        <Select defaultValue="">
+        <Select name="service" defaultValue="" disabled={isPending}>
           <option value="" disabled>
             Select a service…
           </option>
@@ -58,12 +74,23 @@ export function ContactForm() {
         </Select>
       </Field>
       <Field label="Message" className="sm:col-span-2">
-        <Textarea required placeholder="Tell us about your vehicle or project…" />
+        <Textarea
+          name="message"
+          required
+          placeholder="Tell us about your vehicle or project…"
+          disabled={isPending}
+        />
       </Field>
+      {error && (
+        <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 sm:col-span-2">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
       <div className="sm:col-span-2">
-        <Button type="submit" size="lg" className="w-full sm:w-auto">
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isPending}>
           <Send className="h-4 w-4" />
-          Send message
+          {isPending ? "Sending…" : "Send message"}
         </Button>
       </div>
     </form>

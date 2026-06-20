@@ -11,7 +11,35 @@ processing is wired up yet** (that's Phase 2).
 - **TypeScript**
 - **Tailwind CSS v4**
 - **lucide-react** for icons
+- **Resend** for contact & booking confirmation emails
 - Self-contained CSS "tinted glass" placeholders (no external image dependencies)
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+| Variable | Description |
+| -------- | ----------- |
+| `RESEND_API_KEY` | API key from [Resend](https://resend.com/api-keys) |
+| `EMAIL_FROM` | Verified sender, e.g. `King of Shades <contact@kingofshadesnj.com>` |
+| `EMAIL_TO` | Business inbox that receives notifications |
+| `NEXT_PUBLIC_APP_URL` | Public site URL, e.g. `https://kingofshadesnj.com` |
+
+**Resend domain setup:** In the Resend dashboard, add `kingofshadesnj.com` and paste the DNS records (SPF, DKIM) into Hostinger → Domains → DNS. Emails won't send from your domain until verification completes.
+
+## Deploy (Vercel + Hostinger)
+
+1. Import the GitHub repo at [vercel.com](https://vercel.com).
+2. Add the environment variables above in **Vercel → Project → Settings → Environment Variables**.
+3. Deploy — Vercel gives you a `*.vercel.app` URL.
+4. In **Vercel → Domains**, add `kingofshadesnj.com` and `www.kingofshadesnj.com`.
+5. In **Hostinger → DNS**, add the records Vercel shows (typically a CNAME for `www` and an A record for `@`).
+6. Wait for SSL — usually a few minutes.
+
+## Email Flows
+
+- **Contact form** (`/contact`) — sends a notification to `EMAIL_TO` and a confirmation to the customer.
+- **Booking wizard** (`/booking`) — step 5 sends a booking request notification + customer confirmation (no payment yet).
 
 ## Design
 
@@ -35,8 +63,8 @@ npm run lint     # lint
 | `/`          | Homepage — hero, services, why-choose, before/after, testimonials  |
 | `/services`  | Detailed service sections (automotive, residential, commercial, decals) |
 | `/gallery`   | Filterable project grid with lightbox modal                        |
-| `/booking`   | 5-step booking wizard mockup (service → details → date → info → payment) |
-| `/contact`   | Contact form, hours, info, map placeholder                         |
+| `/booking`   | 5-step booking wizard — sends confirmation emails on submit |
+| `/contact`   | Contact form with Resend email notifications |
 
 ### Admin dashboard (`app/admin/`)
 | Route                  | Description                                  |
@@ -65,8 +93,12 @@ components/
   admin/         # AdminShell, AdminUI helpers
   booking/ gallery/ contact/   # feature components
 lib/
-  site.ts        # site config (nav, contact, socials)
+  site.ts        # site config (nav, contact, socials, domain)
+  email.ts       # Resend client + HTML email templates
   data.ts        # all mock/sample data
+app/actions/
+  contact.ts     # contact form server action
+  booking.ts     # booking request server action
   utils.ts accents.ts
 ```
 

@@ -4,8 +4,10 @@ export const site = {
   tagline: "Premium Window Tinting & Custom Vinyl",
   phone: "(555) 846-2337",
   phoneHref: "tel:+15558462337",
-  email: "hello@kingofshades.com",
-  emailHref: "mailto:hello@kingofshades.com",
+  email: "kingofshades2025@gmail.com",
+  emailHref: "mailto:kingofshades2025@gmail.com",
+  domain: "kingofshadesnj.com",
+  url: "https://kingofshadesnj.com",
   address: {
     line1: "1420 Chrome Avenue, Bay 7",
     line2: "Metropolis, CA 90210",
