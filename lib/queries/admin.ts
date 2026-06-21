@@ -3,10 +3,24 @@ import type { Appointment, Customer, Service, GalleryItem, Testimonial, SiteSett
 
 export async function getAdminServices() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("services")
     .select("*")
     .order("sort_order");
+
+  if (error?.message?.includes("detail_image_url") || error?.message?.includes("finish_image_url")) {
+    const legacy = await supabase
+      .from("services")
+      .select("id, slug, title, tagline, description, category, price_label, price_cents, benefits, features, featured_image_url, accent, is_active, sort_order, created_at, updated_at")
+      .order("sort_order");
+    if (legacy.error) throw new Error(legacy.error.message);
+    return (legacy.data ?? []).map((row) => ({
+      ...row,
+      detail_image_url: null,
+      finish_image_url: null,
+    })) as Service[];
+  }
+
   if (error) throw new Error(error.message);
   return (data ?? []) as Service[];
 }

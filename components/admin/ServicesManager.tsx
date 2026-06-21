@@ -6,20 +6,39 @@ import type { Service } from "@/lib/types/database";
 import { deleteService, upsertService } from "@/app/actions/admin";
 import { featuresToLines, listToLines } from "@/lib/cms";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
+import { AdminFeedback, useAdminAction } from "@/components/admin/AdminFeedback";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
 import { AdminPageHeader } from "@/components/admin/AdminUI";
 
-export function ServicesManager({ services }: { services: Service[] }) {
+export function ServicesManager({
+  services,
+  loadError,
+}: {
+  services: Service[];
+  loadError?: string | null;
+}) {
   const [editing, setEditing] = useState<Service | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePending, startDelete] = useTransition();
 
-  const submit = (formData: FormData) => {
-    startTransition(() => {
+  const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertService, {
+    successMessage: "Service saved.",
+    onSuccess: () => setEditing(null),
+  });
+
+  const handleDelete = (id: string) => {
+    if (!confirm("Delete this service?")) return;
+    setDeleteError(null);
+    startDelete(() => {
       void (async () => {
-        await upsertService(formData);
-        setEditing(null);
+        const result = await deleteService(id);
+        if (result.success) {
+          if (editing?.id === id) setEditing(null);
+        } else {
+          setDeleteError(result.error);
+        }
       })();
     });
   };
@@ -30,15 +49,25 @@ export function ServicesManager({ services }: { services: Service[] }) {
         title="Services"
         subtitle="Manage services shown on the public website."
         actions={
-          <Button size="sm" onClick={() => setEditing({} as Service)}>
+          <Button
+            size="sm"
+            onClick={() => {
+              clearFeedback();
+              setDeleteError(null);
+              setEditing({} as Service);
+            }}
+          >
             <Plus className="h-4 w-4" />
             Add Service
           </Button>
         }
       />
 
+      {loadError && <AdminFeedback error={loadError} className="mb-4" />}
+      <AdminFeedback message={message} error={error ?? deleteError} className="mb-4" />
+
       {editing && (
-        <form action={submit} className="mb-6 rounded-2xl border border-gold/30 bg-surface/70 p-6">
+        <form action={run} className="mb-6 rounded-2xl border border-gold/30 bg-surface/70 p-6">
           {editing.id && <input type="hidden" name="id" value={editing.id} />}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title">
@@ -109,12 +138,21 @@ export function ServicesManager({ services }: { services: Service[] }) {
                 <Badge tone="gold" className="mt-1">From {service.price_label}</Badge>
               </div>
               <div className="flex gap-1.5">
-                <button type="button" onClick={() => setEditing(service)} className="grid h-8 w-8 place-items-center rounded-lg border border-line hover:text-gold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearFeedback();
+                    setDeleteError(null);
+                    setEditing(service);
+                  }}
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-line hover:text-gold"
+                >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => startTransition(() => { void deleteService(service.id); })}
+                  disabled={deletePending}
+                  onClick={() => handleDelete(service.id)}
                   className="grid h-8 w-8 place-items-center rounded-lg border border-line hover:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />

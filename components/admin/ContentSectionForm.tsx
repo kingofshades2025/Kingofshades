@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { saveContentSection } from "@/app/actions/admin";
+import { AdminFeedback, useAdminAction } from "@/components/admin/AdminFeedback";
 import { Button } from "@/components/ui/Button";
 
 export function ContentSectionForm({
@@ -19,7 +20,9 @@ export function ContentSectionForm({
   defaultTitle?: string;
   defaultBody?: string;
 }) {
-  const [isPending, startTransition] = useTransition();
+  const { run, isPending, message, error } = useAdminAction(saveContentSection, {
+    successMessage: "Section saved.",
+  });
 
   return (
     <form
@@ -31,13 +34,12 @@ export function ContentSectionForm({
           "metadata",
           JSON.stringify(buildMetadata?.(formData) ?? {}),
         );
-        startTransition(() => {
-          void saveContentSection(formData);
-        });
+        run(formData);
       }}
       className="rounded-2xl border border-line bg-surface/70 p-6"
     >
       <h3 className="font-display text-base font-semibold text-white">{title}</h3>
+      <AdminFeedback message={message} error={error} className="mt-3" />
       <div className="mt-4 space-y-4">{children}</div>
       <Button type="submit" size="sm" className="mt-4" disabled={isPending}>
         Save

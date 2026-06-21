@@ -10,7 +10,7 @@ import {
 } from "@/lib/email";
 
 export type ContactResult =
-  | { success: true }
+  | { success: true; warning?: string }
   | { success: false; error: string };
 
 export async function submitContact(formData: FormData): Promise<ContactResult> {
@@ -25,31 +25,48 @@ export async function submitContact(formData: FormData): Promise<ContactResult> 
   }
 
   const payload = { name, email, phone, service, message };
+  let savedToDb = false;
 
   try {
     if (isSupabaseConfigured()) {
       const supabase = await createClient();
-      await supabase.from("contact_messages").insert({
+      const { error } = await supabase.from("contact_messages").insert({
         name,
         email,
         phone: phone || null,
         service: service || null,
         message,
       });
+      if (error) {
+        console.error("[contact] db insert", error.message);
+      } else {
+        savedToDb = true;
+      }
     }
 
-    await sendEmail({
-      to: getEmailTo(),
-      subject: `New contact: ${name}`,
-      html: contactNotificationHtml(payload),
-      replyTo: email,
-    });
+    try {
+      await sendEmail({
+        to: getEmailTo(),
+        subject: `New contact: ${name}`,
+        html: contactNotificationHtml(payload),
+        replyTo: email,
+      });
 
-    await sendEmail({
-      to: email,
-      subject: "We received your message — King of Shades",
-      html: contactConfirmationHtml(name),
-    });
+      await sendEmail({
+        to: email,
+        subject: "We received your message — King of Shades",
+        html: contactConfirmationHtml(name),
+      });
+    } catch (emailErr) {
+      console.error("[contact] email", emailErr);
+      if (savedToDb) {
+        return {
+          success: true,
+          warning: "Message received — we'll follow up soon. (Confirmation email could not be sent.)",
+        };
+      }
+      throw emailErr;
+    }
 
     return { success: true };
   } catch (err) {

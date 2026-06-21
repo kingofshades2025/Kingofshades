@@ -24,58 +24,61 @@ const DEFAULT_SETTINGS: SiteSettings = {
   updated_at: new Date().toISOString(),
 };
 
+const LEGACY_SERVICE_COLUMNS =
+  "id, slug, title, tagline, description, category, price_label, price_cents, benefits, features, featured_image_url, accent, is_active, sort_order, created_at, updated_at";
+
+function mapMockServices() {
+  return mockServices.map((s, i) => ({
+    id: s.slug,
+    slug: s.slug,
+    title: s.title,
+    tagline: s.tagline,
+    description: s.description,
+    category: s.accent,
+    price_label: s.startingAt,
+    price_cents: null,
+    benefits: s.benefits,
+    features: s.features,
+    featured_image_url: null,
+    detail_image_url: null,
+    finish_image_url: null,
+    accent: s.accent,
+    is_active: true,
+    sort_order: i,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+}
+
 export async function getServices(): Promise<Service[]> {
   if (!isSupabaseConfigured()) {
-    return mockServices.map((s, i) => ({
-      id: s.slug,
-      slug: s.slug,
-      title: s.title,
-      tagline: s.tagline,
-      description: s.description,
-      category: s.accent,
-      price_label: s.startingAt,
-      price_cents: null,
-      benefits: s.benefits,
-      features: s.features,
-      featured_image_url: null,
-      detail_image_url: null,
-      finish_image_url: null,
-      accent: s.accent,
-      is_active: true,
-      sort_order: i,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    return mapMockServices();
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("services")
     .select("*")
     .eq("is_active", true)
     .order("sort_order");
 
-  if (error || !data?.length) {
-    return mockServices.map((s, i) => ({
-      id: s.slug,
-      slug: s.slug,
-      title: s.title,
-      tagline: s.tagline,
-      description: s.description,
-      category: s.accent,
-      price_label: s.startingAt,
-      price_cents: null,
-      benefits: s.benefits,
-      features: s.features,
-      featured_image_url: null,
+  if (error?.message?.includes("detail_image_url") || error?.message?.includes("finish_image_url")) {
+    const legacy = await supabase
+      .from("services")
+      .select(LEGACY_SERVICE_COLUMNS)
+      .eq("is_active", true)
+      .order("sort_order");
+    data = legacy.data?.map((row) => ({
+      ...row,
       detail_image_url: null,
       finish_image_url: null,
-      accent: s.accent,
-      is_active: true,
-      sort_order: i,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    })) ?? null;
+    error = legacy.error;
+  }
+
+  if (error || !data?.length) {
+    if (error) console.error("[getServices]", error.message);
+    return mapMockServices();
   }
   return data as Service[];
 }

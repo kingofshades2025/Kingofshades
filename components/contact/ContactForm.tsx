@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -21,10 +22,10 @@ export function ContactForm() {
           Thanks — we&apos;ll be in touch!
         </h3>
         <p className="mt-2 max-w-sm text-sm text-mist">
-          Your message was sent successfully. Check your inbox for a confirmation
-          email — we&apos;ll respond within one business day.
+          {warning ??
+            "Your message was sent successfully. Check your inbox for a confirmation email — we'll respond within one business day."}
         </p>
-        <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>
+        <Button variant="outline" className="mt-6" onClick={() => { setSent(false); setWarning(null); }}>
           Send another message
         </Button>
       </div>
@@ -39,6 +40,7 @@ export function ContactForm() {
           const result = await submitContact(formData);
           if (result.success) {
             setSent(true);
+            setWarning(result.warning ?? null);
           } else {
             setError(result.error);
           }

@@ -23,7 +23,7 @@ export type BookingPayload = {
 };
 
 export type BookingResult =
-  | { success: true }
+  | { success: true; warning?: string }
   | { success: false; error: string };
 
 function parseAppointmentDate(dateLabel: string): string {
@@ -46,6 +46,8 @@ export async function submitBooking(
   if (!date?.trim() || !time?.trim()) {
     return { success: false, error: "Please select a date and time." };
   }
+
+  let savedToDb = false;
 
   try {
     if (isSupabaseConfigured()) {
@@ -90,7 +92,7 @@ export async function submitBooking(
         serviceId = svc?.id ?? null;
       }
 
-      await supabase.from("appointments").insert({
+      const { error } = await supabase.from("appointments").insert({
         customer_id: customerId,
         service_id: serviceId,
         customer_name: name.trim(),
@@ -104,20 +106,38 @@ export async function submitBooking(
         payment_status: "unpaid",
         details: payload.details,
       });
+
+      if (error) {
+        console.error("[booking] db insert", error.message);
+      } else {
+        savedToDb = true;
+      }
     }
 
-    await sendEmail({
-      to: getEmailTo(),
-      subject: `New booking: ${name} — ${service}`,
-      html: bookingNotificationHtml(payload),
-      replyTo: email,
-    });
+    try {
+      await sendEmail({
+        to: getEmailTo(),
+        subject: `New booking: ${name} — ${service}`,
+        html: bookingNotificationHtml(payload),
+        replyTo: email,
+      });
 
-    await sendEmail({
-      to: email,
-      subject: "Booking request received — King of Shades",
-      html: bookingConfirmationHtml({ name, service, date, time }),
-    });
+      await sendEmail({
+        to: email,
+        subject: "Booking request received — King of Shades",
+        html: bookingConfirmationHtml({ name, service, date, time }),
+      });
+    } catch (emailErr) {
+      console.error("[booking] email", emailErr);
+      if (savedToDb) {
+        return {
+          success: true,
+          warning:
+            "Booking request received — we'll confirm by email soon. (Confirmation email could not be sent.)",
+        };
+      }
+      throw emailErr;
+    }
 
     return { success: true };
   } catch (err) {

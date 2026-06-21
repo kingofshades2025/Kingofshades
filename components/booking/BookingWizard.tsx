@@ -125,6 +125,7 @@ export function BookingWizard({
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitWarning, setSubmitWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -160,6 +161,7 @@ export function BookingWizard({
 
       if (result.success) {
         setSubmitted(true);
+        setSubmitWarning(result.warning ?? null);
       } else {
         setError(result.error);
       }
@@ -177,8 +179,12 @@ export function BookingWizard({
             Booking request sent!
           </h2>
           <p className="mt-3 max-w-md text-sm text-mist">
-            We sent a confirmation to <span className="text-snow">{email}</span>.
-            Our team will reach out shortly to confirm your appointment.
+            {submitWarning ?? (
+              <>
+                We sent a confirmation to <span className="text-snow">{email}</span>.
+                Our team will reach out shortly to confirm your appointment.
+              </>
+            )}
           </p>
           <p className="mt-2 text-sm text-mist">
             {selectedService?.title} · {formatBookingDate(day)} at {slot}
@@ -188,6 +194,7 @@ export function BookingWizard({
             className="mt-8"
             onClick={() => {
               setSubmitted(false);
+              setSubmitWarning(null);
               setStep(0);
               setService(null);
               setDay(null);
