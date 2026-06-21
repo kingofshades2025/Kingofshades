@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Phone } from "lucide-react";
-import { mainNav, site } from "@/lib/site";
+import { mainNav } from "@/lib/site";
+import type { SiteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 
-export function Navbar() {
+export function Navbar({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuPath, setMenuPath] = useState<string | null>(null);

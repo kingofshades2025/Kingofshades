@@ -1,23 +1,28 @@
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
-import { mainNav, site } from "@/lib/site";
-import { services } from "@/lib/data";
+import { mainNav } from "@/lib/site";
+import type { SiteConfig } from "@/lib/site-config";
+import type { Service } from "@/lib/types/database";
 import { Container } from "@/components/ui/Container";
 import { Logo } from "@/components/ui/Logo";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 
-export function Footer() {
+export function Footer({
+  site,
+  tagline,
+  services,
+}: {
+  site: SiteConfig;
+  tagline: string;
+  services: Service[];
+}) {
   return (
     <footer className="border-t border-line bg-charcoal">
       <Container className="py-16">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
             <Logo />
-            <p className="mt-5 max-w-xs text-sm leading-relaxed text-mist">
-              Premium automotive, residential, and commercial window tinting plus
-              custom decals and vinyl graphics — installed by certified pros and
-              backed for life.
-            </p>
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-mist">{tagline}</p>
             <div className="mt-6 flex gap-2.5">
               {site.socials.map((s) => (
                 <a

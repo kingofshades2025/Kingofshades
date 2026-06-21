@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Car, Home, Building2, Sticker, Check, ArrowRight } from "lucide-react";
 import { categoryHueForAccent } from "@/lib/accents";
-import { getServices } from "@/lib/queries/public";
+import { getServices, getContentSections, getSiteSettings } from "@/lib/queries/public";
+import { getSection, sectionMeta } from "@/lib/cms";
 import { toLegacyService } from "@/lib/adapters";
+import { toSiteConfig } from "@/lib/site-config";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -19,15 +21,22 @@ export const metadata: Metadata = {
 const icons = { automotive: Car, residential: Home, commercial: Building2, decals: Sticker };
 
 export default async function ServicesPage() {
-  const dbServices = await getServices();
+  const [dbServices, sections, settings] = await Promise.all([
+    getServices(),
+    getContentSections(),
+    getSiteSettings(),
+  ]);
+  const site = toSiteConfig(settings);
   const services = dbServices.map(toLegacyService);
+  const pageHeader = getSection(sections, "page_services");
+  const pageCta = getSection(sections, "page_services_cta");
 
   return (
     <>
       <PageHeader
-        eyebrow="Our Services"
-        title="Premium film for every surface"
-        description="Whether it's a single windshield or an entire commercial facade, we match the right film to your goals — heat, privacy, security, or pure style."
+        eyebrow={String(sectionMeta(sections, "page_services", "eyebrow", ""))}
+        title={pageHeader.title ?? ""}
+        description={pageHeader.body ?? ""}
       >
         <div className="flex flex-wrap justify-center gap-2">
           {services.map((s) => (
@@ -64,12 +73,8 @@ export default async function ServicesPage() {
                   <h2 className="mt-5 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
                     {service.title}
                   </h2>
-                  <p className="mt-2 text-lg font-medium text-gold/90">
-                    {service.tagline}
-                  </p>
-                  <p className="mt-4 leading-relaxed text-mist">
-                    {service.description}
-                  </p>
+                  <p className="mt-2 text-lg font-medium text-gold/90">{service.tagline}</p>
+                  <p className="mt-4 leading-relaxed text-mist">{service.description}</p>
 
                   <div className="mt-7 grid gap-3 sm:grid-cols-2">
                     {service.features.map((f) => (
@@ -128,8 +133,10 @@ export default async function ServicesPage() {
       })}
 
       <CtaBand
-        title="Not sure which film is right?"
-        description="Tell us about your vehicle or property and we'll recommend the perfect film and shade — free of charge."
+        title={pageCta.title ?? undefined}
+        description={pageCta.body ?? undefined}
+        phone={site.phone}
+        phoneHref={site.phoneHref}
       />
     </>
   );

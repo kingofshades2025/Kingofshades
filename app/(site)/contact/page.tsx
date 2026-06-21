@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, Clock, Navigation } from "lucide-react";
-import { site } from "@/lib/site";
 import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { SocialIcon } from "@/components/ui/SocialIcon";
+import { getContentSections, getSiteSettings } from "@/lib/queries/public";
+import { getSection, sectionMeta } from "@/lib/cms";
+import { toSiteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -13,37 +15,40 @@ export const metadata: Metadata = {
     "Get in touch with King of Shades for a free quote, business hours, and location details.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const [sections, settings] = await Promise.all([
+    getContentSections(),
+    getSiteSettings(),
+  ]);
+  const site = toSiteConfig(settings);
+  const page = getSection(sections, "page_contact");
+
   return (
     <>
       <PageHeader
-        eyebrow="Contact Us"
-        title="Let's talk shade"
-        description="Questions, quotes, or fleet inquiries — reach out and our team will get right back to you."
+        eyebrow={String(sectionMeta(sections, "page_contact", "eyebrow", ""))}
+        title={page.title ?? ""}
+        description={page.body ?? ""}
       />
 
       <section className="py-16 sm:py-20">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-            {/* Form */}
             <Card className="p-6 sm:p-8">
               <h2 className="font-display text-2xl font-bold text-white">
-                Send us a message
+                {String(sectionMeta(sections, "page_contact", "form_title", "Send us a message"))}
               </h2>
               <p className="mt-1 text-sm text-mist">
-                Fill out the form and we&apos;ll respond within one business hour.
+                {String(sectionMeta(sections, "page_contact", "form_subtitle", ""))}
               </p>
               <div className="mt-6">
                 <ContactForm />
               </div>
             </Card>
 
-            {/* Info */}
             <div className="space-y-5">
               <Card className="p-6">
-                <h3 className="font-display text-lg font-semibold text-white">
-                  Get in touch
-                </h3>
+                <h3 className="font-display text-lg font-semibold text-white">Get in touch</h3>
                 <ul className="mt-4 space-y-4 text-sm">
                   <li>
                     <a
@@ -54,9 +59,7 @@ export default function ContactPage() {
                         <Phone className="h-5 w-5" />
                       </span>
                       <span>
-                        <span className="block text-xs uppercase tracking-wider text-mist">
-                          Phone
-                        </span>
+                        <span className="block text-xs uppercase tracking-wider text-mist">Phone</span>
                         {site.phone}
                       </span>
                     </a>
@@ -70,9 +73,7 @@ export default function ContactPage() {
                         <Mail className="h-5 w-5" />
                       </span>
                       <span>
-                        <span className="block text-xs uppercase tracking-wider text-mist">
-                          Email
-                        </span>
+                        <span className="block text-xs uppercase tracking-wider text-mist">Email</span>
                         {site.email}
                       </span>
                     </a>
@@ -82,9 +83,7 @@ export default function ContactPage() {
                       <MapPin className="h-5 w-5" />
                     </span>
                     <span>
-                      <span className="block text-xs uppercase tracking-wider text-mist">
-                        Location
-                      </span>
+                      <span className="block text-xs uppercase tracking-wider text-mist">Location</span>
                       {site.address.line1}
                       <br />
                       {site.address.line2}
@@ -112,9 +111,7 @@ export default function ContactPage() {
               </Card>
 
               <Card className="p-6">
-                <h3 className="font-display text-lg font-semibold text-white">
-                  Follow us
-                </h3>
+                <h3 className="font-display text-lg font-semibold text-white">Follow us</h3>
                 <div className="mt-4 flex gap-2.5">
                   {site.socials.map((s) => (
                     <a
@@ -131,15 +128,11 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Map placeholder */}
           <div className="mt-10">
             <div className="relative h-80 overflow-hidden rounded-3xl border border-line">
               <div
                 className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #141414 0%, #0c0c0c 100%)",
-                }}
+                style={{ background: "linear-gradient(135deg, #141414 0%, #0c0c0c 100%)" }}
               />
               <div
                 className="absolute inset-0 opacity-40"
@@ -149,16 +142,13 @@ export default function ContactPage() {
                   backgroundSize: "48px 48px",
                 }}
               />
-              {/* fake roads */}
               <div className="absolute left-0 top-1/3 h-1.5 w-full -rotate-3 bg-white/5" />
               <div className="absolute left-1/4 top-0 h-full w-1.5 bg-white/5" />
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-full border border-gold/40 bg-ink/80 text-gold shadow-glow">
                   <Navigation className="h-6 w-6" />
                 </span>
-                <p className="mt-4 font-display text-lg font-semibold text-white">
-                  {site.name}
-                </p>
+                <p className="mt-4 font-display text-lg font-semibold text-white">{site.name}</p>
                 <p className="text-sm text-mist">
                   {site.address.line1}, {site.address.line2}
                 </p>

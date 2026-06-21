@@ -28,8 +28,8 @@ export async function upsertService(formData: FormData): Promise<ActionResult> {
     price_label: (formData.get("price_label") as string)?.trim() || null,
     accent: (formData.get("accent") as string)?.trim() || null,
     is_active: formData.get("is_active") === "true",
-    benefits: JSON.parse((formData.get("benefits") as string) || "[]"),
-    features: JSON.parse((formData.get("features") as string) || "[]"),
+    benefits: parseBenefits(formData),
+    features: parseFeatures(formData),
     featured_image_url: (formData.get("featured_image_url") as string)?.trim() || null,
   };
 
@@ -170,14 +170,41 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
   const { supabase } = await requireAdmin();
   const id = formData.get("id") as string | null;
 
+  const hoursLines = (formData.get("business_hours_lines") as string) ?? "";
+  const socialLines = (formData.get("social_links_lines") as string) ?? "";
+
+  const business_hours = hoursLines
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [day, time] = line.split("|").map((p) => p.trim());
+      return { day: day ?? "", time: time ?? "" };
+    })
+    .filter((h) => h.day);
+
+  const social_links = socialLines
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [label, href, icon] = line.split("|").map((p) => p.trim());
+      return { label: label ?? "", href: href ?? "#", icon: icon ?? "instagram" };
+    })
+    .filter((s) => s.label);
+
   const payload = {
     business_name: (formData.get("business_name") as string)?.trim() || "King of Shades",
     phone: (formData.get("phone") as string)?.trim() || null,
     email: (formData.get("email") as string)?.trim() || null,
     address_line1: (formData.get("address_line1") as string)?.trim() || null,
     address_line2: (formData.get("address_line2") as string)?.trim() || null,
-    social_links: JSON.parse((formData.get("social_links") as string) || "[]"),
-    business_hours: JSON.parse((formData.get("business_hours") as string) || "[]"),
+    social_links: social_links.length
+      ? social_links
+      : JSON.parse((formData.get("social_links") as string) || "[]"),
+    business_hours: business_hours.length
+      ? business_hours
+      : JSON.parse((formData.get("business_hours") as string) || "[]"),
   };
 
   const { error } = id
@@ -185,10 +212,34 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
     : await supabase.from("site_settings").insert(payload);
 
   if (error) return { success: false, error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   revalidatePath("/contact");
   revalidatePath("/admin/settings");
   return { success: true };
+}
+
+function parseBenefits(formData: FormData) {
+  const lines = (formData.get("benefits_lines") as string)?.trim();
+  if (lines) {
+    return lines.split("\n").map((l) => l.trim()).filter(Boolean);
+  }
+  return JSON.parse((formData.get("benefits") as string) || "[]");
+}
+
+function parseFeatures(formData: FormData) {
+  const lines = (formData.get("features_lines") as string)?.trim();
+  if (lines) {
+    return lines
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [name, detail] = line.split("|").map((p) => p.trim());
+        return { name: name ?? "", detail: detail ?? "" };
+      })
+      .filter((f) => f.name);
+  }
+  return JSON.parse((formData.get("features") as string) || "[]");
 }
 
 export async function saveContentSection(formData: FormData): Promise<ActionResult> {
@@ -208,7 +259,12 @@ export async function saveContentSection(formData: FormData): Promise<ActionResu
     .upsert(payload, { onConflict: "section_key" });
 
   if (error) return { success: false, error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+  revalidatePath("/services");
+  revalidatePath("/gallery");
+  revalidatePath("/contact");
+  revalidatePath("/booking");
+  revalidatePath("/admin/content");
   revalidatePath("/admin/settings");
   return { success: true };
 }

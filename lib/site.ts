@@ -40,6 +40,7 @@ export const adminNav = [
   { label: "Services", href: "/admin/services", icon: "tag" },
   { label: "Gallery", href: "/admin/gallery", icon: "image" },
   { label: "Testimonials", href: "/admin/testimonials", icon: "quote" },
+  { label: "Content", href: "/admin/content", icon: "edit" },
   { label: "Payments", href: "/admin/payments", icon: "card" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
 ] as const;

@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/Button";
 export function CtaBand({
   title = "Ready to upgrade your shade?",
   description = "Book your appointment online or request a free, no-obligation quote. Most vehicles done same day.",
+  phone,
+  phoneHref,
 }: {
   title?: string;
   description?: string;
+  phone?: string;
+  phoneHref?: string;
 }) {
+  const displayPhone = phone ?? site.phone;
+  const displayPhoneHref = phoneHref ?? site.phoneHref;
   return (
     <section className="py-16">
       <Container>
@@ -31,11 +37,11 @@ export function CtaBand({
                 Get a Free Quote
               </Button>
               <a
-                href={site.phoneHref}
+                href={displayPhoneHref}
                 className="inline-flex items-center gap-2 px-4 text-sm font-medium text-snow/80 transition-colors hover:text-gold"
               >
                 <Phone className="h-4 w-4 text-gold" />
-                {site.phone}
+                {displayPhone}
               </a>
             </div>
           </div>

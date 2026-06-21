@@ -12,6 +12,7 @@ import {
   CreditCard,
   Settings,
   MessageSquareQuote,
+  FilePenLine,
   Menu,
   X,
   Search,
@@ -33,6 +34,7 @@ const icons = {
   card: CreditCard,
   settings: Settings,
   quote: MessageSquareQuote,
+  edit: FilePenLine,
 } as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

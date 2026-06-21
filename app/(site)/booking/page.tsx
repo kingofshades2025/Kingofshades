@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { BookingWizard } from "@/components/booking/BookingWizard";
-import { getBookingServices } from "@/lib/queries/public";
+import { getBookingServices, getContentSections } from "@/lib/queries/public";
+import { getSection, sectionMeta } from "@/lib/cms";
 
 export const metadata: Metadata = {
   title: "Book an Appointment",
@@ -11,14 +12,18 @@ export const metadata: Metadata = {
 };
 
 export default async function BookingPage() {
-  const services = await getBookingServices();
+  const [services, sections] = await Promise.all([
+    getBookingServices(),
+    getContentSections(),
+  ]);
+  const page = getSection(sections, "page_booking");
 
   return (
     <>
       <PageHeader
-        eyebrow="Book Appointment"
-        title="Schedule your install"
-        description="Five quick steps to request your appointment. We'll confirm by email."
+        eyebrow={String(sectionMeta(sections, "page_booking", "eyebrow", ""))}
+        title={page.title ?? ""}
+        description={page.body ?? ""}
       />
       <section className="py-16 sm:py-20">
         <Container>

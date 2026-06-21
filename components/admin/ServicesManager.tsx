@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { Service } from "@/lib/types/database";
 import { deleteService, upsertService } from "@/app/actions/admin";
+import { featuresToLines, listToLines } from "@/lib/cms";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
@@ -38,8 +39,6 @@ export function ServicesManager({ services }: { services: Service[] }) {
       {editing && (
         <form action={submit} className="mb-6 rounded-2xl border border-gold/30 bg-surface/70 p-6">
           {editing.id && <input type="hidden" name="id" value={editing.id} />}
-          <input type="hidden" name="benefits" value={JSON.stringify(editing.benefits ?? [])} />
-          <input type="hidden" name="features" value={JSON.stringify(editing.features ?? [])} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title">
               <Input name="title" defaultValue={editing.title} required />
@@ -63,6 +62,12 @@ export function ServicesManager({ services }: { services: Service[] }) {
             </Field>
             <Field label="Description" className="sm:col-span-2">
               <Textarea name="description" defaultValue={editing.description ?? ""} />
+            </Field>
+            <Field label="Benefits (one per line)" className="sm:col-span-2">
+              <Textarea name="benefits_lines" rows={4} defaultValue={listToLines(editing.benefits ?? [])} />
+            </Field>
+            <Field label="Feature boxes (Name|Detail per line)" className="sm:col-span-2">
+              <Textarea name="features_lines" rows={4} defaultValue={featuresToLines(editing.features ?? [])} />
             </Field>
             <Field label="Status">
               <Select name="is_active" defaultValue={editing.is_active === false ? "false" : "true"}>
