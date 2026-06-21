@@ -1,15 +1,27 @@
 # Deployment — King of Shades
 
-## Two Vercel projects (consolidate when ready)
+## Two Vercel projects (consolidated)
 
-| Project | Team | URL | Role |
-| ------- | ---- | --- | ---- |
-| **kingofshades** | Shady Boys | `www.kingofshadesnj.com` | **Production** — GitHub auto-deploy from `main` |
-| **kingofshades** | mc's projects | `kingofshades-hazel.vercel.app` | Legacy duplicate — env vars set, no custom domain |
+Production runs on **Shady Boys / kingofshades** only (`www.kingofshadesnj.com`).
 
-**Recommended:** Keep only the **Shady Boys** project for production. The mc's projects deployment can be deleted or kept as a personal preview — it is not linked to the custom domain.
+The duplicate **mc's projects** deployment (`kingofshades-hazel.vercel.app`) was removed to avoid split env/deploy confusion.
 
-Local CLI is linked to **mc's projects** (`.vercel/project.json`). GitHub pushes deploy to **Shady Boys**.
+## Rotate Resend API key
+
+Your current key is **send-only** (cannot manage keys via API). To rotate:
+
+1. Go to [Resend → API Keys](https://resend.com/api-keys) and create a new key named `King of Shades Production` with **Sending access** for `kingofshadesnj.com`.
+2. Copy the new key (shown once).
+3. Run:
+
+```powershell
+$env:NEW_RESEND_API_KEY = "re_your_new_key"
+$env:VERCEL_TOKEN = "your-shady-boys-vercel-token"   # optional
+node scripts/rotate-resend-key.mjs
+```
+
+4. Redeploy the Supabase `send-email` function from Cursor (Supabase MCP) or dashboard after updating secrets.
+5. Delete the old key in Resend once email is verified on https://www.kingofshadesnj.com/contact
 
 ## Environment variables (Shady Boys / production)
 
