@@ -30,6 +30,8 @@ export default async function AdminServicesPage() {
       benefits: s.benefits,
       features: s.features,
       featured_image_url: null,
+      detail_image_url: null,
+      finish_image_url: null,
       accent: s.accent,
       is_active: true,
       sort_order: i,

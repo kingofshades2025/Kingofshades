@@ -3,7 +3,8 @@
 import { useTransition } from "react";
 import type { GalleryItem, GalleryCategory } from "@/lib/types/database";
 import { galleryCategories } from "@/lib/data";
-import { deleteGalleryItem, uploadGalleryImage, upsertGalleryItem } from "@/app/actions/admin";
+import { deleteGalleryItem, upsertGalleryItem } from "@/app/actions/admin";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { AdminPageHeader } from "@/components/admin/AdminUI";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
@@ -27,25 +28,7 @@ export function GalleryManager({ items }: { items: GalleryItem[] }) {
         </Field>
         <Field label="Description" className="sm:col-span-2"><Textarea name="description" /></Field>
         <Field label="Tint"><Input name="tint" placeholder="20%" /></Field>
-        <Field label="Image URL"><Input name="image_url" placeholder="https://… or upload below" /></Field>
-        <Field label="Upload image" className="sm:col-span-2">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const fd = new FormData();
-              fd.set("file", file);
-              const result = await uploadGalleryImage(fd);
-              if (result.success) {
-                const urlInput = document.querySelector<HTMLInputElement>('input[name="image_url"]');
-                if (urlInput) urlInput.value = result.url;
-              }
-            }}
-            className="text-sm text-mist"
-          />
-        </Field>
+        <ImageUploadField name="image_url" label="Project photo" />
         <div className="sm:col-span-2">
           <Button type="submit" disabled={isPending}>Add to gallery</Button>
         </div>

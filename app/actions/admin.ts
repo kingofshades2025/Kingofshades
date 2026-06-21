@@ -31,6 +31,8 @@ export async function upsertService(formData: FormData): Promise<ActionResult> {
     benefits: parseBenefits(formData),
     features: parseFeatures(formData),
     featured_image_url: (formData.get("featured_image_url") as string)?.trim() || null,
+    detail_image_url: (formData.get("detail_image_url") as string)?.trim() || null,
+    finish_image_url: (formData.get("finish_image_url") as string)?.trim() || null,
   };
 
   const { error } = id
@@ -269,6 +271,27 @@ export async function saveContentSection(formData: FormData): Promise<ActionResu
   return { success: true };
 }
 
+export async function uploadSiteImage(formData: FormData): Promise<
+  { success: true; url: string } | { success: false; error: string }
+> {
+  const { supabase } = await requireAdmin();
+  const file = formData.get("file") as File | null;
+  if (!file) return { success: false, error: "No file provided." };
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `site/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("gallery")
+    .upload(path, file, { upsert: false });
+
+  if (uploadError) return { success: false, error: uploadError.message };
+
+  const { data } = supabase.storage.from("gallery").getPublicUrl(path);
+  return { success: true, url: data.publicUrl };
+}
+
+/** @deprecated Use uploadSiteImage */
 export async function uploadGalleryImage(formData: FormData): Promise<
   { success: true; url: string } | { success: false; error: string }
 > {
@@ -277,7 +300,7 @@ export async function uploadGalleryImage(formData: FormData): Promise<
   if (!file) return { success: false, error: "No file provided." };
 
   const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from("gallery")

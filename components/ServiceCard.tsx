@@ -21,8 +21,9 @@ export function ServiceCard({ service }: { service: Service }) {
       <TintGlass
         hue={hue}
         className="h-44 rounded-b-none border-0 border-b"
-        icon={<Icon />}
-        sublabel={`From ${service.startingAt}`}
+        icon={service.featuredImageUrl ? undefined : <Icon />}
+        sublabel={service.featuredImageUrl ? undefined : `From ${service.startingAt}`}
+        imageUrl={service.featuredImageUrl}
       />
       <div className="flex flex-1 flex-col p-6">
         <h3 className="font-display text-lg font-semibold text-white">

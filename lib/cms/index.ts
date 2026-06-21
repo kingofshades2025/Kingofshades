@@ -211,6 +211,16 @@ export function listToLines(items: string[]) {
   return items.join("\n");
 }
 
+/** Read an optional image URL from section metadata */
+export function metaImage(
+  sections: Record<string, ContentSection>,
+  key: string,
+  metaKey: string,
+): string | undefined {
+  const value = sectionMeta(sections, key, metaKey, "");
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
 export function linesToFeatures(text: string) {
   return text
     .split("\n")

@@ -9,6 +9,9 @@ export type Service = {
   startingAt: string;
   features: { name: string; detail: string }[];
   accent: "automotive" | "residential" | "commercial" | "decals";
+  featuredImageUrl?: string;
+  detailImageUrl?: string;
+  finishImageUrl?: string;
 };
 
 export const services: Service[] = [

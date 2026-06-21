@@ -118,12 +118,23 @@ export default async function ServicesPage() {
                     <TintGlass
                       hue={hue}
                       className="col-span-2 aspect-[16/10]"
-                      icon={<Icon />}
-                      label={service.title.replace(" Window Tinting", "")}
-                      sublabel="Example project"
+                      icon={service.featuredImageUrl ? undefined : <Icon />}
+                      label={service.featuredImageUrl ? undefined : service.title.replace(" Window Tinting", "")}
+                      sublabel={service.featuredImageUrl ? undefined : "Example project"}
+                      imageUrl={service.featuredImageUrl}
                     />
-                    <TintGlass hue={hue + 20} className="aspect-square" sublabel="Detail" />
-                    <TintGlass hue={hue - 20} className="aspect-square" sublabel="Finish" />
+                    <TintGlass
+                      hue={hue + 20}
+                      className="aspect-square"
+                      sublabel={service.detailImageUrl ? undefined : "Detail"}
+                      imageUrl={service.detailImageUrl}
+                    />
+                    <TintGlass
+                      hue={hue - 20}
+                      className="aspect-square"
+                      sublabel={service.finishImageUrl ? undefined : "Finish"}
+                      imageUrl={service.finishImageUrl}
+                    />
                   </div>
                 </div>
               </div>

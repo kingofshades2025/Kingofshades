@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { Service } from "@/lib/types/database";
 import { deleteService, upsertService } from "@/app/actions/admin";
 import { featuresToLines, listToLines } from "@/lib/cms";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
@@ -69,6 +70,22 @@ export function ServicesManager({ services }: { services: Service[] }) {
             <Field label="Feature boxes (Name|Detail per line)" className="sm:col-span-2">
               <Textarea name="features_lines" rows={4} defaultValue={featuresToLines(editing.features ?? [])} />
             </Field>
+            <ImageUploadField
+              name="featured_image_url"
+              label="Main photo"
+              defaultValue={editing.featured_image_url ?? ""}
+              hint="Large image on the service page and homepage card."
+            />
+            <ImageUploadField
+              name="detail_image_url"
+              label="Detail photo"
+              defaultValue={editing.detail_image_url ?? ""}
+            />
+            <ImageUploadField
+              name="finish_image_url"
+              label="Finish photo"
+              defaultValue={editing.finish_image_url ?? ""}
+            />
             <Field label="Status">
               <Select name="is_active" defaultValue={editing.is_active === false ? "false" : "true"}>
                 <option value="true">Active</option>

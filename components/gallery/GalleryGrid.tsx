@@ -92,6 +92,7 @@ export function GalleryGrid({
                 idx % 7 === 0 && "sm:aspect-[1/1.3]",
               )}
               badge={item.tint}
+              imageUrl={item.imageUrl}
             />
             <div className="mt-2.5 flex items-center justify-between gap-2 px-0.5">
               <div className="min-w-0">
@@ -147,7 +148,8 @@ export function GalleryGrid({
               hue={categoryHue[current.category]}
               className="aspect-[16/10] w-full"
               badge={current.tint}
-              icon={<Maximize2 />}
+              icon={current.imageUrl ? undefined : <Maximize2 />}
+              imageUrl={current.imageUrl}
             />
             <div className="mt-4 flex items-center justify-between gap-4">
               <div>

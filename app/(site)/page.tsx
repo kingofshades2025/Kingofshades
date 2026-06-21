@@ -17,7 +17,7 @@ import {
   getHomepageContent,
   getSiteSettings,
 } from "@/lib/queries/public";
-import { getSection, sectionMeta, getBeforeAfterCards } from "@/lib/cms";
+import { getSection, sectionMeta, getBeforeAfterCards, metaImage } from "@/lib/cms";
 import { toLegacyService, toLegacyTestimonial } from "@/lib/adapters";
 import { toSiteConfig } from "@/lib/site-config";
 import { Section, SectionHeading } from "@/components/ui/Section";
@@ -125,6 +125,7 @@ export default async function HomePage() {
                 badge={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))}
                 label={heroVisual.title ?? ""}
                 sublabel={heroVisual.body ?? ""}
+                imageUrl={metaImage(sections, "hero_visual", "image_url")}
               />
               <Card className="absolute -bottom-6 -left-6 hidden w-56 p-4 sm:block">
                 <div className="flex items-center gap-3">
@@ -175,6 +176,7 @@ export default async function HomePage() {
               className="aspect-[5/4]"
               label={String(sectionMeta(sections, "about_section", "visual_label", ""))}
               sublabel={String(sectionMeta(sections, "about_section", "visual_sublabel", ""))}
+              imageUrl={metaImage(sections, "about_section", "image_url")}
             />
             <div className="absolute -bottom-5 right-6 rounded-2xl border border-gold/30 bg-ink/90 px-5 py-4 backdrop-blur">
               <p className="font-display text-3xl font-bold text-gradient-gold">
@@ -259,6 +261,8 @@ export default async function HomePage() {
             hue={28}
             className="aspect-[16/9]"
             label={String(sectionMeta(sections, "before_after_section", "slider_label", ""))}
+            beforeImage={metaImage(sections, "before_after_section", "before_image_url")}
+            afterImage={metaImage(sections, "before_after_section", "after_image_url")}
           />
         </div>
         <div className="mx-auto mt-6 grid max-w-4xl gap-4 sm:grid-cols-3">

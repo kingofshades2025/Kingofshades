@@ -41,6 +41,8 @@ export type Service = {
   benefits: string[];
   features: ServiceFeature[];
   featured_image_url: string | null;
+  detail_image_url: string | null;
+  finish_image_url: string | null;
   accent: string | null;
   is_active: boolean;
   sort_order: number;

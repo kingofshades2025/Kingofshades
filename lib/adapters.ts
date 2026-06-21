@@ -11,6 +11,9 @@ export function toLegacyService(s: DbService): LegacyService {
     startingAt: s.price_label ?? "Quote",
     features: s.features,
     accent: (s.accent ?? s.category) as LegacyService["accent"],
+    featuredImageUrl: s.featured_image_url ?? undefined,
+    detailImageUrl: s.detail_image_url ?? undefined,
+    finishImageUrl: s.finish_image_url ?? undefined,
   };
 }
 

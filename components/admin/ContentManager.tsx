@@ -24,6 +24,7 @@ import {
   linesToList,
 } from "@/lib/cms";
 import { ContentSectionForm } from "@/components/admin/ContentSectionForm";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { AdminPageHeader } from "@/components/admin/AdminUI";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 
@@ -85,8 +86,17 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
               title="Hero image card"
               defaultTitle={heroVisual.title ?? ""}
               defaultBody={heroVisual.body ?? ""}
-              buildMetadata={(fd) => ({ badge: (fd.get("badge") as string)?.trim() || "Ceramic 20%" })}
+              buildMetadata={(fd) => ({
+                badge: (fd.get("badge") as string)?.trim() || "Ceramic 20%",
+                image_url: (fd.get("image_url") as string)?.trim() || null,
+              })}
             >
+              <ImageUploadField
+                name="image_url"
+                label="Hero photo"
+                defaultValue={String(sectionMeta(sections, "hero_visual", "image_url", ""))}
+                hint="Large image on the right side of the homepage hero."
+              />
               <Field label="Badge"><Input name="badge" defaultValue={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))} /></Field>
               <Field label="Label"><Input name="title" defaultValue={heroVisual.title ?? ""} /></Field>
               <Field label="Sublabel"><Input name="body" defaultValue={heroVisual.body ?? ""} /></Field>
@@ -144,8 +154,15 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
               visual_sublabel: (fd.get("visual_sublabel") as string)?.trim(),
               stat_value: (fd.get("stat_value") as string)?.trim(),
               stat_label: (fd.get("stat_label") as string)?.trim(),
+              image_url: (fd.get("image_url") as string)?.trim() || null,
             })}
           >
+            <ImageUploadField
+              name="image_url"
+              label="About section photo"
+              defaultValue={String(sectionMeta(sections, "about_section", "image_url", ""))}
+              hint="Photo on the left in the Who We Are section."
+            />
             <Field label="Eyebrow"><Input name="eyebrow" defaultValue={String(sectionMeta(sections, "about_section", "eyebrow", "Who We Are"))} /></Field>
             <Field label="Heading"><Input name="title" defaultValue={about.title ?? ""} /></Field>
             <Field label="Description"><Textarea name="body" defaultValue={about.body ?? ""} /></Field>
@@ -208,8 +225,22 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
               eyebrow: (fd.get("eyebrow") as string)?.trim(),
               slider_label: (fd.get("slider_label") as string)?.trim(),
               cards: linesToCards((fd.get("cards") as string) ?? ""),
+              before_image_url: (fd.get("before_image_url") as string)?.trim() || null,
+              after_image_url: (fd.get("after_image_url") as string)?.trim() || null,
             })}
           >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ImageUploadField
+                name="before_image_url"
+                label="Before photo (untinted / glare)"
+                defaultValue={String(sectionMeta(sections, "before_after_section", "before_image_url", ""))}
+              />
+              <ImageUploadField
+                name="after_image_url"
+                label="After photo (tinted)"
+                defaultValue={String(sectionMeta(sections, "before_after_section", "after_image_url", ""))}
+              />
+            </div>
             <Field label="Eyebrow"><Input name="eyebrow" defaultValue={String(sectionMeta(sections, "before_after_section", "eyebrow", ""))} /></Field>
             <Field label="Title"><Input name="title" defaultValue={beforeAfter.title ?? ""} /></Field>
             <Field label="Description"><Textarea name="body" defaultValue={beforeAfter.body ?? ""} /></Field>
