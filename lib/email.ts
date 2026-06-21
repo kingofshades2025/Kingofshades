@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { EMAIL_FUNCTION_SECRET } from "@/lib/app-config";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/public-config";
 
 let resend: Resend | null = null;
 
@@ -10,6 +12,36 @@ function getResend() {
     resend = new Resend(process.env.RESEND_API_KEY);
   }
   return resend;
+}
+
+async function sendViaEdgeFunction(opts: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  replyTo?: string;
+}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "x-email-secret": EMAIL_FUNCTION_SECRET,
+    },
+    body: JSON.stringify({
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      replyTo: opts.replyTo,
+      from: getEmailFrom(),
+    }),
+  });
+
+  const data = (await res.json()) as { id?: string; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? "Email function failed");
+  }
+
+  return data;
 }
 
 export function getEmailFrom() {
@@ -26,19 +58,23 @@ export async function sendEmail(opts: {
   html: string;
   replyTo?: string;
 }) {
-  const { data, error } = await getResend().emails.send({
-    from: getEmailFrom(),
-    to: opts.to,
-    subject: opts.subject,
-    html: opts.html,
-    replyTo: opts.replyTo,
-  });
+  if (process.env.RESEND_API_KEY?.trim()) {
+    const { data, error } = await getResend().emails.send({
+      from: getEmailFrom(),
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      replyTo: opts.replyTo,
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 
-  return data;
+  return sendViaEdgeFunction(opts);
 }
 
 function row(label: string, value: string) {

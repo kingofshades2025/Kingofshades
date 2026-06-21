@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { APP_URL } from "@/lib/app-config";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthResult =
@@ -40,8 +41,7 @@ export async function signInWithPassword(
 
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const supabase = await createClient();
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const origin = APP_URL;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${origin}/auth/callback?next=/admin/reset-password`,
