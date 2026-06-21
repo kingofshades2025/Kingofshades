@@ -32,8 +32,9 @@ const REQUIRED = [
 ];
 
 function loadEnv() {
+  const raw = readFileSync(envFile, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const vars = {};
-  for (const line of readFileSync(envFile, "utf8").split("\n")) {
+  for (const line of raw.split("\n")) {
     const match = line.match(/^\s*([^#=]+)=(.*)$/);
     if (!match) continue;
     vars[match[1].trim()] = match[2].trim().replace(/^"|"$/g, "");

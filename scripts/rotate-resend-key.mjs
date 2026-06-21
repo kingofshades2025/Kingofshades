@@ -23,13 +23,22 @@ const TEAM_ID = "team_fWC0CAuS2gFzrgsUomKY8KxC";
 const PROJECT_ID = "prj_DT39IZzN4RWmv27PdpKCgRupOik5";
 const PROJECT_REF = "ertxeyopvtoclwkfrmso";
 
+function loadEnv() {
+  const raw = readFileSync(envFile, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const vars = {};
+  for (const line of raw.split("\n")) {
+    const match = line.match(/^\s*([^#=]+)=(.*)$/);
+    if (!match) continue;
+    vars[match[1].trim()] = match[2].trim().replace(/^"|"$/g, "");
+  }
+  return vars;
+}
+
 function updateEnvLocal(newKey) {
-  const content = readFileSync(envFile, "utf8");
-  const updated = content.replace(
-    /^RESEND_API_KEY=.*$/m,
-    `RESEND_API_KEY=${newKey}`,
-  );
-  writeFileSync(envFile, updated, "utf8");
+  const raw = readFileSync(envFile, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const eol = raw.includes("\r\n") ? "\r\n" : "\n";
+  const updated = raw.replace(/^RESEND_API_KEY=.*$/m, `RESEND_API_KEY=${newKey}`);
+  writeFileSync(envFile, updated.split("\n").join(eol), "utf8");
   console.log("✓ Updated .env.local");
 }
 
