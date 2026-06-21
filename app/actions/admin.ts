@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
-import type { AppointmentStatus, GalleryCategory } from "@/lib/types/database";
+import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
+import { sendEmail, appointmentConfirmedHtml, quoteSentHtml } from "@/lib/email";
+import { formatMoney } from "@/lib/booking/pricing";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -143,6 +145,13 @@ export async function updateAppointmentStatus(
 ): Promise<ActionResult> {
   try {
     const { supabase } = await requireAdmin();
+
+    const { data: existing } = await supabase
+      .from("appointments")
+      .select("customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status")
+      .eq("id", id)
+      .maybeSingle();
+
     const { error } = await supabase
       .from("appointments")
       .update({
@@ -151,7 +160,27 @@ export async function updateAppointmentStatus(
       })
       .eq("id", id);
     if (error) return { success: false, error: error.message };
+
+    if (existing && status === "confirmed" && existing.status !== "confirmed") {
+      try {
+        await sendEmail({
+          to: existing.customer_email,
+          subject: `Appointment confirmed — ${existing.appointment_number ?? "King of Shades"}`,
+          html: appointmentConfirmedHtml({
+            name: existing.customer_name,
+            service: existing.service_title,
+            date: existing.appointment_date,
+            time: existing.appointment_time,
+            appointmentNumber: existing.appointment_number ?? undefined,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("[updateAppointmentStatus] email", emailErr);
+      }
+    }
+
     revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
     revalidatePath("/admin");
     return { success: true };
   } catch (err) {
@@ -324,6 +353,29 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
       business_hours: business_hours.length
         ? business_hours
         : safeJsonParse((formData.get("business_hours") as string) ?? "[]", []),
+      booking_settings: {
+        slotDurationMinutes: Number(formData.get("slot_duration") || 120),
+        bufferMinutes: Number(formData.get("buffer_minutes") || 15),
+        maxDailyAppointments: Number(formData.get("max_daily_appointments") || 8),
+        closedWeekdays: [0],
+        weekdayStart: (formData.get("weekday_start") as string)?.trim() || "08:00",
+        weekdayEnd: (formData.get("weekday_end") as string)?.trim() || "18:00",
+        saturdayStart: (formData.get("saturday_start") as string)?.trim() || "09:00",
+        saturdayEnd: (formData.get("saturday_end") as string)?.trim() || "16:00",
+        sundayClosed: formData.get("sunday_closed") === "true",
+      },
+      payment_settings: {
+        acceptDeposits: formData.get("accept_deposits") === "true",
+        acceptFullPayment: formData.get("accept_full_payment") === "true",
+        depositPercent: Number(formData.get("deposit_percent") || 25),
+        taxRatePercent: Number(formData.get("tax_rate_percent") || 8.875),
+      },
+      notification_settings: {
+        emailRemindersEnabled: formData.get("email_reminders_enabled") === "true",
+        reminder24hEnabled: formData.get("reminder_24h_enabled") === "true",
+        reminder2hEnabled: formData.get("reminder_2h_enabled") === "true",
+        smsEnabled: formData.get("sms_enabled") === "true",
+      },
     };
 
     const { error } = id && isUuid(id)
@@ -428,4 +480,102 @@ export async function uploadGalleryImage(formData: FormData): Promise<
   { success: true; url: string } | { success: false; error: string }
 > {
   return uploadSiteImage(formData);
+}
+
+export async function updateQuoteStatus(
+  id: string,
+  status: QuoteStatus,
+  quotedAmountCents?: number,
+  adminNotes?: string,
+): Promise<ActionResult> {
+  try {
+    if (!isUuid(id)) return { success: false, error: "Invalid quote ID." };
+    const { supabase } = await requireAdmin();
+
+    const { data: existing } = await supabase
+      .from("quote_requests")
+      .select("customer_name, customer_email, service_type, status, quoted_amount_cents")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (status === "quote_sent" && !quotedAmountCents && !existing?.quoted_amount_cents) {
+      return { success: false, error: "Enter a quoted amount before sending the quote." };
+    }
+
+    const amount = quotedAmountCents ?? existing?.quoted_amount_cents ?? null;
+
+    const { error } = await supabase
+      .from("quote_requests")
+      .update({
+        status,
+        ...(amount !== null ? { quoted_amount_cents: amount } : {}),
+        ...(adminNotes !== undefined ? { admin_notes: adminNotes } : {}),
+        ...(status === "quote_sent" ? { sent_at: new Date().toISOString() } : {}),
+      })
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+
+    if (
+      existing &&
+      status === "quote_sent" &&
+      existing.status !== "quote_sent" &&
+      existing.customer_email &&
+      amount
+    ) {
+      try {
+        await sendEmail({
+          to: existing.customer_email,
+          subject: `Your quote from King of Shades — ${existing.service_type}`,
+          html: quoteSentHtml({
+            name: existing.customer_name,
+            serviceType: existing.service_type,
+            quotedAmount: formatMoney(amount),
+            notes: adminNotes,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("[updateQuoteStatus] email", emailErr);
+      }
+    }
+
+    revalidatePath("/admin/quotes");
+    return { success: true };
+  } catch (err) {
+    logActionError("updateQuoteStatus", err);
+    return { success: false, error: "Could not update quote." };
+  }
+}
+
+export async function addBlockedDate(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const blocked_date = (formData.get("blocked_date") as string)?.trim();
+    if (!blocked_date) return { success: false, error: "Date is required." };
+    const { error } = await supabase.from("blocked_dates").insert({
+      blocked_date,
+      reason: (formData.get("reason") as string)?.trim() || null,
+    });
+    if (error) return { success: false, error: error.message };
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin/settings");
+    return { success: true };
+  } catch (err) {
+    logActionError("addBlockedDate", err);
+    return { success: false, error: "Could not block date." };
+  }
+}
+
+export async function deleteBlockedDate(id: string): Promise<ActionResult> {
+  try {
+    if (!isUuid(id)) return { success: false, error: "Invalid blocked date ID." };
+    const { supabase } = await requireAdmin();
+    const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin/settings");
+    return { success: true };
+  } catch (err) {
+    logActionError("deleteBlockedDate", err);
+    return { success: false, error: "Could not remove blocked date." };
+  }
 }

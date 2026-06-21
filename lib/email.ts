@@ -152,6 +152,7 @@ export function bookingNotificationHtml(data: {
   phone: string;
   notes: string;
   details: Record<string, string>;
+  appointmentNumber?: string;
 }) {
   const detailRows = Object.entries(data.details)
     .filter(([, v]) => v.trim())
@@ -159,6 +160,7 @@ export function bookingNotificationHtml(data: {
     .join("");
 
   const rows = [
+    row("Appointment #", data.appointmentNumber ?? "—"),
     row("Service", data.service),
     row("Tint / shade", data.tint),
     row("Date", data.date),
@@ -187,21 +189,91 @@ export function bookingConfirmationHtml(data: {
   service: string;
   date: string;
   time: string;
+  appointmentNumber?: string;
 }) {
   const first = data.name.split(" ")[0];
   return emailLayout(
-    `Booking request received, ${first}!`,
+    `Booking confirmed, ${first}!`,
     `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
-       Thank you for choosing King of Shades. We've received your appointment request:
+       Thank you for choosing King of Shades. Your appointment request is confirmed:
      </p>
      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+       ${row("Appointment #", data.appointmentNumber ?? "Pending")}
        ${row("Service", data.service)}
-       ${row("Requested date", data.date)}
-       ${row("Requested time", data.time)}
+       ${row("Date", data.date)}
+       ${row("Time", data.time)}
      </table>
      <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
-       Our team will confirm your appointment shortly. Payment processing will be added in a future update —
-       no deposit has been charged.
+       We'll send a reminder before your appointment. Questions? Reply to this email or call the shop.
      </p>`,
+  );
+}
+
+export function appointmentConfirmedHtml(data: {
+  name: string;
+  service: string;
+  date: string;
+  time: string;
+  appointmentNumber?: string;
+}) {
+  const first = data.name.split(" ")[0];
+  return emailLayout(
+    `You're all set, ${first}!`,
+    `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+       Your King of Shades appointment has been confirmed by our team.
+     </p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;">
+       ${row("Appointment #", data.appointmentNumber ?? "—")}
+       ${row("Service", data.service)}
+       ${row("Date", data.date)}
+       ${row("Time", data.time)}
+     </table>`,
+  );
+}
+
+export function quoteSentHtml(data: {
+  name: string;
+  serviceType: string;
+  quotedAmount: string;
+  notes?: string;
+}) {
+  const first = data.name.split(" ")[0];
+  return emailLayout(
+    `Your quote is ready, ${first}`,
+    `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+       We've reviewed your custom project request and prepared an estimate.
+     </p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+       ${row("Service", data.serviceType)}
+       ${row("Quoted amount", data.quotedAmount)}
+       ${data.notes ? row("Notes", data.notes.replace(/\n/g, "<br>")) : ""}
+     </table>
+     <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
+       Reply to this email or call us to approve the quote and schedule your project.
+     </p>`,
+  );
+}
+
+export function quoteNotificationHtml(data: {
+  name: string;
+  email: string;
+  phone: string;
+  serviceType: string;
+  description: string;
+  measurements: string;
+}) {
+  const rows = [
+    row("Name", data.name),
+    row("Email", data.email),
+    row("Phone", data.phone || "—"),
+    row("Service", data.serviceType),
+    row("Description", data.description.replace(/\n/g, "<br>")),
+    row("Measurements", data.measurements.replace(/\n/g, "<br>") || "—"),
+  ].join("");
+
+  return emailLayout(
+    "New quote request",
+    `<p style="color:#555;font-size:15px;margin:0 0 20px;">A customer submitted a custom quote request.</p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;">${rows}</table>`,
   );
 }

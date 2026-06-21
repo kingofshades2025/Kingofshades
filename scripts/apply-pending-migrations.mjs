@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Apply pending Supabase migrations (002 + 003) via service role.
+ * Apply pending Supabase migrations (002 + 003 + 004) via service role.
  * Requires SUPABASE_SERVICE_ROLE_KEY in .env.local
  */
 import { readFileSync, existsSync } from "fs";
@@ -33,7 +33,11 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const migrations = ["002_service_detail_images.sql", "003_fix_table_grants.sql"];
+const migrations = [
+  "002_service_detail_images.sql",
+  "003_fix_table_grants.sql",
+  "004_phase3_booking_payments.sql",
+];
 
 async function runSql(sql) {
   const res = await fetch(`${url}/rest/v1/rpc/exec_sql`, {

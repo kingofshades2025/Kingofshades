@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Appointment, Customer, Service, GalleryItem, Testimonial, SiteSettings, ContentSection } from "@/lib/types/database";
+import type { Appointment, Customer, Service, GalleryItem, Testimonial, SiteSettings, ContentSection, Payment, QuoteRequest, BlockedDate } from "@/lib/types/database";
 
 export async function getAdminServices() {
   const supabase = await createClient();
@@ -137,4 +137,59 @@ export async function getCustomerAppointments(customerId: string) {
     .order("appointment_date", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Appointment[];
+}
+
+export async function getAdminPayments() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("payments")
+    .select("*, appointments(customer_name, service_title, appointment_number)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Payment[];
+}
+
+export async function getAdminQuotes() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("quote_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as QuoteRequest[];
+}
+
+export async function getBlockedDates() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("blocked_dates")
+    .select("*")
+    .order("blocked_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BlockedDate[];
+}
+
+export async function getPaymentSummary() {
+  const supabase = await createClient();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const { data } = await supabase
+    .from("payments")
+    .select("amount_cents, status, payment_type, created_at")
+    .gte("created_at", thirtyDaysAgo.toISOString());
+
+  const rows = data ?? [];
+  const succeeded = rows.filter((r) => r.status === "succeeded");
+  const revenueCents = succeeded.reduce((sum, r) => sum + (r.amount_cents ?? 0), 0);
+  const refundedCents = rows
+    .filter((r) => r.status === "refunded" || r.payment_type === "refund")
+    .reduce((sum, r) => sum + (r.amount_cents ?? 0), 0);
+
+  return {
+    revenueCents,
+    refundedCents,
+    transactionCount: succeeded.length,
+    pendingCount: rows.filter((r) => r.status === "pending").length,
+  };
 }

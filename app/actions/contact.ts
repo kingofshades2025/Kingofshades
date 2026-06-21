@@ -68,6 +68,13 @@ export async function submitContact(formData: FormData): Promise<ContactResult> 
       throw emailErr;
     }
 
+    if (!savedToDb && isSupabaseConfigured()) {
+      return {
+        success: true,
+        warning: "Message sent by email — we may not have saved a copy in the system.",
+      };
+    }
+
     return { success: true };
   } catch (err) {
     console.error("[contact]", err);

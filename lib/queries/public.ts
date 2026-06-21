@@ -204,5 +204,6 @@ export async function getBookingServices() {
     description: s.tagline ?? "",
     icon: iconMap[s.slug] ?? "car",
     from: s.price_label ?? "Quote",
+    priceCents: s.price_cents,
   }));
 }

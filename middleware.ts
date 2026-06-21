@@ -38,9 +38,23 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
+  const isPortalRoute = pathname.startsWith("/portal");
   const isPublicAdmin = PUBLIC_ADMIN_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
+  const isPortalLogin = pathname === "/portal/login";
+
+  if (isPortalRoute && !isPortalLogin && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portal/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (isPortalLogin && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portal";
+    return NextResponse.redirect(url);
+  }
 
   if (isAdminRoute && !isPublicAdmin) {
     if (!user) {
@@ -61,7 +75,11 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("error", "unauthorized");
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      }
+      return redirectResponse;
     }
   }
 
@@ -75,5 +93,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/portal", "/portal/:path*"],
 };

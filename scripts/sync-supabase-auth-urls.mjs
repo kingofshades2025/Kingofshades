@@ -15,7 +15,10 @@ const SITE_URL = "https://kingofshadesnj.com";
 const REDIRECT_URLS = [
   "https://kingofshadesnj.com/auth/callback",
   "https://www.kingofshadesnj.com/auth/callback",
+  "https://kingofshadesnj.com/auth/callback?next=/portal",
+  "https://www.kingofshadesnj.com/auth/callback?next=/portal",
   "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/callback?next=/portal",
   "https://kingofshades-hazel.vercel.app/auth/callback",
   "https://kingofshades-*.vercel.app/auth/callback",
 ].join(",");

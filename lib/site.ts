@@ -35,7 +35,9 @@ export const mainNav = [
 
 export const adminNav = [
   { label: "Dashboard", href: "/admin", icon: "dashboard" },
+  { label: "Calendar", href: "/admin/calendar", icon: "calendar" },
   { label: "Appointments", href: "/admin/appointments", icon: "calendar" },
+  { label: "Quotes", href: "/admin/quotes", icon: "edit" },
   { label: "Customers", href: "/admin/customers", icon: "users" },
   { label: "Services", href: "/admin/services", icon: "tag" },
   { label: "Gallery", href: "/admin/gallery", icon: "image" },

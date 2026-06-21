@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AppointmentStatus } from "@/lib/data";
+import type { AppointmentStatus as DbAppointmentStatus } from "@/lib/types/database";
 import type { Invoice } from "@/lib/data";
 import { Badge } from "@/components/ui/Badge";
 
@@ -73,16 +73,27 @@ export function StatCard({
   );
 }
 
-export function AppointmentStatusBadge({ status }: { status: AppointmentStatus }) {
+const appointmentStatusLabels: Record<DbAppointmentStatus, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  in_progress: "In progress",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+export function AppointmentStatusBadge({ status }: { status: DbAppointmentStatus | string }) {
+  const normalized = (typeof status === "string" ? status.toLowerCase().replace(" ", "_") : status) as DbAppointmentStatus;
   const tone =
-    status === "Confirmed"
+    normalized === "confirmed"
       ? "green"
-      : status === "Pending"
+      : normalized === "pending"
         ? "amber"
-        : status === "Completed"
+        : normalized === "in_progress"
           ? "blue"
-          : "red";
-  return <Badge tone={tone}>{status}</Badge>;
+          : normalized === "completed"
+            ? "blue"
+            : "red";
+  return <Badge tone={tone}>{appointmentStatusLabels[normalized] ?? status}</Badge>;
 }
 
 export function InvoiceStatusBadge({ status }: { status: Invoice["status"] }) {

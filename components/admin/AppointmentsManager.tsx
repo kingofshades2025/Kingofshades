@@ -7,7 +7,7 @@ import { AdminPageHeader, AppointmentStatusBadge } from "@/components/admin/Admi
 import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
-const statuses: AppointmentStatus[] = ["pending", "confirmed", "completed", "cancelled"];
+const statuses: AppointmentStatus[] = ["pending", "confirmed", "in_progress", "completed", "cancelled"];
 
 export function AppointmentsManager({ appointments }: { appointments: Appointment[] }) {
   const [filter, setFilter] = useState("all");
@@ -66,7 +66,7 @@ export function AppointmentsManager({ appointments }: { appointments: Appointmen
                   {a.appointment_date} · {a.appointment_time}
                 </td>
                 <td className="px-4 py-3">
-                  <AppointmentStatusBadge status={a.status.charAt(0).toUpperCase() + a.status.slice(1) as "Pending" | "Confirmed" | "Completed" | "Cancelled"} />
+                  <AppointmentStatusBadge status={a.status} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
