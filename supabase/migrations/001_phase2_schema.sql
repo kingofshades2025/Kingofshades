@@ -341,6 +341,32 @@ create policy "Admins delete gallery images"
   using (bucket_id = 'gallery' and public.is_admin());
 
 -- ---------------------------------------------------------------------------
+-- Table privileges (required by PostgREST; RLS still applies)
+-- ---------------------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+
+grant select on public.services to anon, authenticated;
+grant select on public.gallery_items to anon, authenticated;
+grant select on public.testimonials to anon, authenticated;
+grant select on public.site_settings to anon, authenticated;
+grant select on public.content_sections to anon, authenticated;
+
+grant insert on public.appointments to anon, authenticated;
+grant insert on public.contact_messages to anon, authenticated;
+
+grant select, insert, update, delete on public.services to authenticated;
+grant select, insert, update, delete on public.gallery_items to authenticated;
+grant select, insert, update, delete on public.testimonials to authenticated;
+grant select, update on public.site_settings to authenticated;
+grant select, update on public.content_sections to authenticated;
+grant select, insert, update, delete on public.appointments to authenticated;
+grant select, update on public.contact_messages to authenticated;
+grant select, update on public.customers to authenticated;
+grant select, update on public.admin_profiles to authenticated;
+
+grant usage, select on all sequences in schema public to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Bootstrap admin helper (run manually after creating auth user):
 -- insert into public.admin_profiles (id, email, role)
 -- values ('YOUR_AUTH_USER_UUID', 'you@email.com', 'super_admin');
