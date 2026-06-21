@@ -14,16 +14,20 @@ import { cn } from "@/lib/utils";
 
 const filters = ["All", ...galleryCategories] as const;
 
-export function GalleryGrid() {
+export function GalleryGrid({
+  items = galleryItems,
+}: {
+  items?: (GalleryItem & { imageUrl?: string })[];
+}) {
   const [active, setActive] = useState<(typeof filters)[number]>("All");
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   const filtered = useMemo(
     () =>
       active === "All"
-        ? galleryItems
-        : galleryItems.filter((g) => g.category === active),
-    [active],
+        ? items
+        : items.filter((g) => g.category === active),
+    [active, items],
   );
 
   const current: GalleryItem | null =

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { BookingWizard } from "@/components/booking/BookingWizard";
+import { getBookingServices } from "@/lib/queries/public";
 
 export const metadata: Metadata = {
   title: "Book an Appointment",
@@ -9,17 +10,19 @@ export const metadata: Metadata = {
     "Book your window tint or vinyl appointment online in a few quick steps.",
 };
 
-export default function BookingPage() {
+export default async function BookingPage() {
+  const services = await getBookingServices();
+
   return (
     <>
       <PageHeader
         eyebrow="Book Appointment"
         title="Schedule your install"
-        description="Five quick steps to lock in your appointment. This is a Phase 1 prototype — no payment is processed."
+        description="Five quick steps to request your appointment. We'll confirm by email."
       />
       <section className="py-16 sm:py-20">
         <Container>
-          <BookingWizard />
+          <BookingWizard services={services} />
         </Container>
       </section>
     </>

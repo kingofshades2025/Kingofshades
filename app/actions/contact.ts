@@ -1,5 +1,7 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
   sendEmail,
   getEmailTo,
@@ -25,6 +27,17 @@ export async function submitContact(formData: FormData): Promise<ContactResult> 
   const payload = { name, email, phone, service, message };
 
   try {
+    if (isSupabaseConfigured()) {
+      const supabase = await createClient();
+      await supabase.from("contact_messages").insert({
+        name,
+        email,
+        phone: phone || null,
+        service: service || null,
+        message,
+      });
+    }
+
     await sendEmail({
       to: getEmailTo(),
       subject: `New contact: ${name}`,

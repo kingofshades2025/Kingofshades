@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Car, Home, Building2, Sticker, Check, ArrowRight } from "lucide-react";
-import { services } from "@/lib/data";
 import { categoryHueForAccent } from "@/lib/accents";
+import { getServices } from "@/lib/queries/public";
+import { toLegacyService } from "@/lib/adapters";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
 
 const icons = { automotive: Car, residential: Home, commercial: Building2, decals: Sticker };
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const dbServices = await getServices();
+  const services = dbServices.map(toLegacyService);
+
   return (
     <>
       <PageHeader

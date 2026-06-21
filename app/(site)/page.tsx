@@ -10,7 +10,9 @@ import {
   Eye,
   Quote,
 } from "lucide-react";
-import { services, testimonials, whyChoose, stats, processSteps } from "@/lib/data";
+import { services as mockServices, testimonials as mockTestimonials, whyChoose, stats, processSteps } from "@/lib/data";
+import { getServices, getTestimonials, getHomepageContent } from "@/lib/queries/public";
+import { toLegacyService, toLegacyTestimonial } from "@/lib/adapters";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +26,27 @@ import { CtaBand } from "@/components/sections/CtaBand";
 
 const whyIcons = { shield: ShieldCheck, badge: BadgeCheck, gem: Gem, clock: Clock };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [{ sections }, dbServices, dbTestimonials] = await Promise.all([
+    getHomepageContent(),
+    getServices(),
+    getTestimonials(),
+  ]);
+
+  const services = dbServices.length
+    ? dbServices.slice(0, 4).map(toLegacyService)
+    : mockServices;
+  const testimonials = dbTestimonials.length
+    ? dbTestimonials.map(toLegacyTestimonial)
+    : mockTestimonials;
+
+  const heroBadge = sections.hero_badge?.title ?? "Rated 5 stars by 2,100+ drivers";
+  const heroTitle = sections.hero_title?.title ?? "The Royal Standard in Window Tinting";
+  const heroHighlight = (sections.hero_title?.metadata?.highlight as string) ?? "Window Tinting";
+  const heroSubtitle =
+    sections.hero_subtitle?.body ??
+    "Premium automotive, residential, and commercial tint plus custom vinyl — installed by certified technicians and backed by a lifetime warranty.";
+
   return (
     <>
       {/* ============================== HERO ============================== */}
@@ -42,16 +64,21 @@ export default function HomePage() {
             <div className="animate-fade-up">
               <Badge tone="gold">
                 <Sparkles className="h-3.5 w-3.5" />
-                Rated 5 stars by 2,100+ drivers
+                {heroBadge}
               </Badge>
               <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                The Royal Standard in{" "}
-                <span className="text-gradient-gold">Window Tinting</span>
+                {heroTitle.includes(heroHighlight) ? (
+                  <>
+                    {heroTitle.split(heroHighlight)[0]}
+                    <span className="text-gradient-gold">{heroHighlight}</span>
+                    {heroTitle.split(heroHighlight)[1]}
+                  </>
+                ) : (
+                  heroTitle
+                )}
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-mist">
-                Premium automotive, residential, and commercial tint plus custom
-                vinyl — installed by certified technicians and backed by a
-                lifetime warranty. Cooler, sharper, and built to last.
+                {heroSubtitle}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button href="/booking" size="lg">

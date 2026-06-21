@@ -11,17 +11,18 @@ import {
   Image as ImageIcon,
   CreditCard,
   Settings,
+  MessageSquareQuote,
   Menu,
   X,
   Search,
   Bell,
-  LogOut,
   ExternalLink,
   ChevronDown,
 } from "lucide-react";
 import { adminNav } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import { LogoutButton } from "@/components/admin/LogoutButton";
 
 const icons = {
   dashboard: LayoutDashboard,
@@ -31,6 +32,7 @@ const icons = {
   image: ImageIcon,
   card: CreditCard,
   settings: Settings,
+  quote: MessageSquareQuote,
 } as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -75,13 +77,7 @@ function SidebarFooter() {
         <ExternalLink className="h-[18px] w-[18px]" />
         View website
       </Link>
-      <Link
-        href="/admin/login"
-        className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-snow/70 transition-colors hover:bg-white/5 hover:text-red-400"
-      >
-        <LogOut className="h-[18px] w-[18px]" />
-        Sign out
-      </Link>
+      <LogoutButton />
     </div>
   );
 }

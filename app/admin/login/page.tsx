@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Lock, Mail } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Field, Input, Label } from "@/components/ui/Field";
+import { Suspense } from "react";
+import { ArrowLeft } from "lucide-react";
+import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { Logo } from "@/components/ui/Logo";
 
 export const metadata: Metadata = {
@@ -32,62 +32,13 @@ export default function AdminLoginPage() {
               Admin Portal
             </h1>
             <p className="mt-1 text-sm text-mist">
-              Sign in to manage bookings, customers, and more.
+              Sign in to manage bookings, customers, and content.
             </p>
           </div>
 
-          <form className="mt-8 space-y-5">
-            <Field label="Email address" htmlFor="email">
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mist" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@kingofshades.com"
-                  defaultValue="admin@kingofshades.com"
-                  className="pl-10"
-                />
-              </div>
-            </Field>
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-xs text-gold hover:text-gold-light">
-                  Forgot?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mist" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  defaultValue="demo-password"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-mist">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="h-4 w-4 rounded border-line bg-charcoal-light accent-gold"
-              />
-              Keep me signed in
-            </label>
-
-            {/* No real auth — links straight to the dashboard mockup */}
-            <Button href="/admin" size="lg" className="w-full">
-              Sign in to Dashboard
-            </Button>
-          </form>
-
-          <p className="mt-6 rounded-xl border border-line bg-charcoal-light px-4 py-3 text-center text-xs text-mist">
-            Prototype only — authentication is not implemented. Any sign-in opens
-            the dashboard.
-          </p>
+          <Suspense>
+            <AdminLoginForm />
+          </Suspense>
         </div>
 
         <div className="mt-6 text-center">

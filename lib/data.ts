@@ -159,6 +159,7 @@ export type GalleryItem = {
   category: GalleryCategory;
   detail: string;
   tint?: string;
+  imageUrl?: string;
 };
 
 export const galleryItems: GalleryItem[] = [

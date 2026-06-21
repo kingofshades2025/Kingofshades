@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { submitBooking } from "@/app/actions/booking";
-import { bookingServices, tintPercentages, timeSlots } from "@/lib/data";
+import { bookingServices as defaultBookingServices, tintPercentages, timeSlots } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
@@ -109,7 +109,11 @@ function formatBookingDate(day: number | null): string {
   );
 }
 
-export function BookingWizard() {
+export function BookingWizard({
+  services: bookingServices = defaultBookingServices,
+}: {
+  services?: typeof defaultBookingServices;
+}) {
   const [step, setStep] = useState(0);
   const [service, setService] = useState<string | null>(null);
   const [tint, setTint] = useState<string>(tintPercentages[2]);
@@ -143,6 +147,7 @@ export function BookingWizard() {
     startTransition(async () => {
       const result = await submitBooking({
         service: selectedService.title,
+        serviceSlug: selectedService.id,
         tint,
         date: formatBookingDate(day),
         time: slot,

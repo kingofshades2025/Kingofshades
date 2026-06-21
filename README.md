@@ -102,7 +102,25 @@ app/actions/
   utils.ts accents.ts
 ```
 
-## Phase 2 (not included)
+## Phase 2 — Supabase backend (in progress)
+
+See **`supabase/README.md`** for full setup instructions.
+
+- **Supabase Auth** — secure admin login, logout, password reset, protected `/admin/*` routes
+- **Database** — services, appointments, customers, gallery, testimonials, site settings, CMS content
+- **RLS** — public read for active content; admin-only write access
+- **Admin CRUD** — services, appointments, gallery, testimonials, settings
+- **Public site** — homepage, services, gallery, and booking load from Supabase (falls back to mock data if not configured)
+
+### Required env vars (add to `.env.local` and Vercel)
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+## Phase 2 (legacy note — payments not included)
 
 Authentication, booking logic, payment processing, database integration, real image
 uploads, and live maps.
