@@ -31,7 +31,7 @@ export default function ContactPage() {
                 Send us a message
               </h2>
               <p className="mt-1 text-sm text-mist">
-                Fill out the form and we'll respond within one business hour.
+                Fill out the form and we&apos;ll respond within one business hour.
               </p>
               <div className="mt-6">
                 <ContactForm />

@@ -13,7 +13,8 @@ import { Logo } from "@/components/ui/Logo";
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const open = menuPath === pathname;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -21,10 +22,6 @@ export function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -85,7 +82,7 @@ export function Navbar() {
           <button
             type="button"
             aria-label={open ? "Close menu" : "Open menu"}
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setMenuPath((current) => (current === pathname ? null : pathname))}
             className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-charcoal-light text-snow lg:hidden"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

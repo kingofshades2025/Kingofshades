@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowRight,
   ShieldCheck,
@@ -12,7 +11,7 @@ import {
   Quote,
 } from "lucide-react";
 import { services, testimonials, whyChoose, stats, processSteps } from "@/lib/data";
-import { Section, SectionHeading, Eyebrow } from "@/components/ui/Section";
+import { Section, SectionHeading } from "@/components/ui/Section";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

@@ -18,11 +18,11 @@ export function ContactForm() {
           <CheckCircle2 className="h-7 w-7" />
         </span>
         <h3 className="mt-4 font-display text-xl font-semibold text-white">
-          Thanks — we'll be in touch!
+          Thanks — we&apos;ll be in touch!
         </h3>
         <p className="mt-2 max-w-sm text-sm text-mist">
           Your message was sent successfully. Check your inbox for a confirmation
-          email — we'll respond within one business day.
+          email — we&apos;ll respond within one business day.
         </p>
         <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>
           Send another message

@@ -4,7 +4,6 @@ import { services } from "@/lib/data";
 import { categoryHueForAccent } from "@/lib/accents";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { TintGlass } from "@/components/ui/TintGlass";
 import { PageHeader } from "@/components/sections/PageHeader";

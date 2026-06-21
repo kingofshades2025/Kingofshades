@@ -422,7 +422,7 @@ export function BookingWizard() {
               Pick a date & time
             </h2>
             <p className="mt-1 text-sm text-mist">
-              Choose any available slot — we'll confirm by text.
+              Choose any available slot — we&apos;ll confirm by text.
             </p>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
               <Calendar selected={day} onSelect={setDay} />
@@ -558,7 +558,7 @@ export function BookingWizard() {
             </Button>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-mist">
               <CreditCard className="h-3.5 w-3.5" />
-              No payment required yet — we'll confirm your appointment by email.
+              No payment required yet — we&apos;ll confirm your appointment by email.
             </p>
           </div>
         )}
