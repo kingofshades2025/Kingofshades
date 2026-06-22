@@ -21,6 +21,7 @@ import { getAvailableTimeSlots } from "@/app/actions/availability";
 import { getBookingPriceEstimate } from "@/app/actions/payments";
 import { bookingServices as defaultBookingServices, tintPercentages } from "@/lib/data";
 import { CUSTOM_QUOTE_SERVICE, TINT_TYPES } from "@/lib/booking/defaults";
+import { resolveServiceFormKind } from "@/lib/booking/service-form";
 import { formatDateLabel } from "@/lib/booking/availability";
 import { BookingCalendar } from "@/components/booking/BookingCalendar";
 import { VehicleFields } from "@/components/booking/VehicleFields";
@@ -38,6 +39,7 @@ type BookingService = {
   title: string;
   description: string;
   icon: string;
+  accent?: string;
   from: string;
   priceCents?: number | null;
 };
@@ -75,6 +77,13 @@ export function BookingWizard({
   };
 
   const selectedService = bookingServices.find((s) => s.id === service);
+  const formKind = selectedService
+    ? resolveServiceFormKind({
+        id: selectedService.id,
+        accent: selectedService.accent,
+        icon: selectedService.icon,
+      })
+    : null;
   const windowCount = Number(details["Number of windows"] || 0) || undefined;
 
   useEffect(() => {
@@ -266,7 +275,7 @@ export function BookingWizard({
             <h2 className="font-display text-2xl font-bold text-white">Service details</h2>
             <p className="mt-1 text-sm text-mist">Help us prepare the right film and estimate.</p>
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              {service === "automotive" ? (
+              {formKind === "automotive" ? (
                 <>
                   <VehicleFields
                     year={details.Year ?? ""}
@@ -280,7 +289,7 @@ export function BookingWizard({
                   <Field label="Tint percentage"><Select value={tint} onChange={(e) => setTint(e.target.value)}>{tintPercentages.map((t) => <option key={t}>{t}</option>)}</Select></Field>
                   <Field label="Tint type"><Select value={tintType} onChange={(e) => setTintType(e.target.value)}>{TINT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</Select></Field>
                 </>
-              ) : service === "decals" ? (
+              ) : formKind === "decals" ? (
                 <>
                   <Field label="Project type"><Select value={details["Project type"] ?? ""} onChange={(e) => setDetail("Project type", e.target.value)}><option value="" disabled>Select…</option><option>Custom decal</option><option>Vehicle graphics / wrap</option><option>Storefront branding</option><option>Window graphics</option></Select></Field>
                   <Field label="Approx. size / quantity"><Input placeholder="e.g. 2 doors + rear" value={details["Approx. size / quantity"] ?? ""} onChange={(e) => setDetail("Approx. size / quantity", e.target.value)} /></Field>
@@ -342,7 +351,7 @@ export function BookingWizard({
               <Field label="Full name"><Input placeholder="Jordan Carter" value={name} onChange={(e) => setName(e.target.value)} required /></Field>
               <Field label="Phone number"><Input type="tel" placeholder="(555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
               <Field label="Email address" className="sm:col-span-2"><Input type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></Field>
-              {(service === "residential" || service === "commercial") && (
+              {(formKind === "residential" || formKind === "commercial") && (
                 <Field label="Property address" className="sm:col-span-2"><Input placeholder="Street address" value={address} onChange={(e) => setAddress(e.target.value)} /></Field>
               )}
               <Field label="Notes (optional)" className="sm:col-span-2"><Textarea placeholder="Anything else we should know?" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>

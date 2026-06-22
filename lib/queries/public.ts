@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { ICON_BY_KIND, resolveServiceFormKind } from "@/lib/booking/service-form";
 import { mergeContentSections, getStats, getFeatureStrip, getWhyChoose, getProcessSteps } from "@/lib/cms";
 import { services as mockServices, testimonials as mockTestimonials, galleryItems as mockGallery } from "@/lib/data";
 import { site as fallbackSite } from "@/lib/site";
@@ -186,24 +187,20 @@ export async function getHomepageContent() {
 
 export async function getBookingServices() {
   const services = await getServices();
-  const iconMap: Record<string, string> = {
-    automotive: "car",
-    residential: "home",
-    commercial: "building",
-    decals: "sticker",
-  };
-  const titleMap: Record<string, string> = {
-    automotive: "Automotive",
-    residential: "Residential",
-    commercial: "Commercial",
-    decals: "Decals & Vinyl",
-  };
-  return services.map((s) => ({
-    id: s.slug,
-    title: titleMap[s.slug] ?? s.title,
-    description: s.tagline ?? "",
-    icon: iconMap[s.slug] ?? "car",
-    from: s.price_label ?? "Quote",
-    priceCents: s.price_cents,
-  }));
+  return services.map((s) => {
+    const accent = resolveServiceFormKind({
+      id: s.slug,
+      accent: s.accent,
+      category: s.category,
+    });
+    return {
+      id: s.slug,
+      title: s.title,
+      description: s.tagline ?? "",
+      icon: ICON_BY_KIND[accent],
+      accent,
+      from: s.price_label ?? "Quote",
+      priceCents: s.price_cents,
+    };
+  });
 }

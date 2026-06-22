@@ -319,10 +319,10 @@ export const revenueByMonth = [
 /* ------------------------------ Booking data ------------------------------ */
 
 export const bookingServices = [
-  { id: "automotive", title: "Automotive", description: "Cars, trucks, SUVs & windshields", icon: "car", from: "$199" },
-  { id: "residential", title: "Residential", description: "Homes, condos & apartments", icon: "home", from: "$12/sq ft" },
-  { id: "commercial", title: "Commercial", description: "Offices, storefronts & security", icon: "building", from: "Quote" },
-  { id: "decals", title: "Decals & Vinyl", description: "Custom graphics & wraps", icon: "sticker", from: "$89" },
+  { id: "automotive", title: "Automotive", description: "Cars, trucks, SUVs & windshields", icon: "car", accent: "automotive", from: "$199" },
+  { id: "residential", title: "Residential", description: "Homes, condos & apartments", icon: "home", accent: "residential", from: "$12/sq ft" },
+  { id: "commercial", title: "Commercial", description: "Offices, storefronts & security", icon: "building", accent: "commercial", from: "Quote" },
+  { id: "decals", title: "Decals & Vinyl", description: "Custom graphics & wraps", icon: "sticker", accent: "decals", from: "$89" },
 ];
 
 export const tintPercentages = ["5% (Limo)", "15%", "20%", "35%", "50%", "70% (Clear)"];

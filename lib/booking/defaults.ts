@@ -41,5 +41,6 @@ export const CUSTOM_QUOTE_SERVICE = {
   title: "Custom Quote",
   description: "Not sure what you need? Tell us about your project.",
   icon: "sticker" as const,
+  accent: "decals" as const,
   from: "Free estimate",
 };
