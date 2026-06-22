@@ -29,6 +29,10 @@ export const metadata: Metadata = {
     "custom decals",
     "vinyl graphics",
   ],
+  icons: {
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

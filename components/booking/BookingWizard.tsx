@@ -27,8 +27,9 @@ import { BookingCalendar } from "@/components/booking/BookingCalendar";
 import { VehicleFields } from "@/components/booking/VehicleFields";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Badge } from "@/components/ui/Badge";
+import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { ClientFileUpload } from "@/components/ui/ClientFileUpload";
 
 const serviceIcons = { car: Car, home: Home, building: Building2, sticker: Sticker };
 
@@ -59,6 +60,7 @@ export function BookingWizard({
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [details, setDetails] = useState<Record<string, string>>({});
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -145,6 +147,7 @@ export function BookingWizard({
         address: address.trim(),
         notes: notes.trim(),
         details,
+        photoUrls: photoUrls.length ? photoUrls : undefined,
         paymentMode: pricing?.stripeEnabled ? paymentMode : "none",
         windowCount,
       });
@@ -303,6 +306,13 @@ export function BookingWizard({
                   <Field label="Desired film shade"><Select value={tint} onChange={(e) => setTint(e.target.value)}>{tintPercentages.map((t) => <option key={t}>{t}</option>)}</Select></Field>
                   <Field label="Additional notes" className="sm:col-span-2"><Textarea placeholder="Access notes, floor level, etc." value={details["Additional notes"] ?? ""} onChange={(e) => setDetail("Additional notes", e.target.value)} /></Field>
                 </>
+              )}
+              {formKind !== "automotive" && (
+                <ClientFileUpload
+                  value={photoUrls}
+                  onChange={setPhotoUrls}
+                  hint="Show us your windows, vehicle graphics, or reference designs — up to 5 files, 5 MB each"
+                />
               )}
             </div>
           </div>
