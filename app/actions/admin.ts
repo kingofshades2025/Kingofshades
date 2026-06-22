@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
 import { sendEmail, appointmentConfirmedHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
 import { getSiteBaseUrl } from "@/lib/app-url";
+import { getSiteSettings } from "@/lib/queries/public";
 import { formatMoney } from "@/lib/booking/pricing";
 import { createQuoteCheckout } from "@/app/actions/payments";
 
@@ -181,6 +182,7 @@ export async function updateAppointmentStatus(
 
     if (existing && status === "confirmed" && existing.status !== "confirmed") {
       try {
+        const siteSettings = await getSiteSettings();
         await sendEmail({
           to: existing.customer_email,
           subject: `Appointment confirmed — ${existing.appointment_number ?? "King of Shades"}`,
@@ -190,6 +192,8 @@ export async function updateAppointmentStatus(
             date: existing.appointment_date,
             time: existing.appointment_time,
             appointmentNumber: existing.appointment_number ?? undefined,
+            addressLine1: siteSettings.address_line1,
+            addressLine2: siteSettings.address_line2,
           }),
         });
       } catch (emailErr) {
@@ -537,11 +541,15 @@ export async function uploadSiteImage(formData: FormData): Promise<
   { success: true; url: string } | { success: false; error: string }
 > {
   try {
-    const { supabase } = await requireAdmin();
+    await requireAdmin();
+    const supabase = createAdminClient();
     const file = formData.get("file") as File | null;
     if (!file) return { success: false, error: "No file provided." };
     if (file.size > MAX_UPLOAD_BYTES) {
-      return { success: false, error: "Image must be 5 MB or smaller." };
+      return {
+        success: false,
+        error: `Image must be ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB or smaller.`,
+      };
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
@@ -553,14 +561,21 @@ export async function uploadSiteImage(formData: FormData): Promise<
 
     const { error: uploadError } = await supabase.storage
       .from("gallery")
-      .upload(path, file, { upsert: false });
+      .upload(path, file, { upsert: false, contentType: file.type || undefined });
 
-    if (uploadError) return { success: false, error: uploadError.message };
+    if (uploadError) {
+      console.error("[uploadSiteImage]", uploadError.message);
+      return { success: false, error: uploadError.message };
+    }
 
     const { data } = supabase.storage.from("gallery").getPublicUrl(path);
     return { success: true, url: data.publicUrl };
   } catch (err) {
     logActionError("uploadSiteImage", err);
+    const message = err instanceof Error ? err.message : "";
+    if (message.toLowerCase().includes("body exceeded") || message.toLowerCase().includes("too large")) {
+      return { success: false, error: "Image is too large for upload. Try under 5 MB or compress the file." };
+    }
     return { success: false, error: "Upload failed. Please try again." };
   }
 }

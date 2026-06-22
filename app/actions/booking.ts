@@ -224,6 +224,8 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
     }
 
     try {
+      const siteSettings = await getSiteSettings();
+
       await sendEmail({
         to: getEmailTo(),
         subject: `New booking ${appointmentNumber ?? ""}: ${name} — ${service}`,
@@ -234,7 +236,15 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
       await sendEmail({
         to: email,
         subject: `Booking confirmed — ${appointmentNumber ?? "King of Shades"}`,
-        html: bookingConfirmationHtml({ name, service, date, time, appointmentNumber }),
+        html: bookingConfirmationHtml({
+          name,
+          service,
+          date,
+          time,
+          appointmentNumber,
+          addressLine1: siteSettings.address_line1,
+          addressLine2: siteSettings.address_line2,
+        }),
       });
     } catch (emailErr) {
       console.error("[booking] email", emailErr);

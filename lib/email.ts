@@ -82,6 +82,11 @@ function row(label: string, value: string) {
   return `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#666;font-size:14px;width:140px;">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#111;font-size:14px;">${value}</td></tr>`;
 }
 
+function shopLocationRow(line1?: string | null, line2?: string | null) {
+  const formatted = [line1?.trim(), line2?.trim()].filter(Boolean).join("<br>");
+  return formatted ? row("Location", formatted) : "";
+}
+
 function emailButton(label: string, href: string) {
   return `<table cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
     <tr><td>
@@ -209,6 +214,8 @@ export function bookingConfirmationHtml(data: {
   date: string;
   time: string;
   appointmentNumber?: string;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
 }) {
   const first = data.name.split(" ")[0];
   return emailLayout(
@@ -221,6 +228,7 @@ export function bookingConfirmationHtml(data: {
        ${row("Service", data.service)}
        ${row("Date", data.date)}
        ${row("Time", data.time)}
+       ${shopLocationRow(data.addressLine1, data.addressLine2)}
      </table>
      <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
        We'll send a reminder before your appointment. Questions? Reply to this email or call the shop.
@@ -260,6 +268,8 @@ export function appointmentConfirmedHtml(data: {
   date: string;
   time: string;
   appointmentNumber?: string;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
 }) {
   const first = data.name.split(" ")[0];
   return emailLayout(
@@ -272,6 +282,7 @@ export function appointmentConfirmedHtml(data: {
        ${row("Service", data.service)}
        ${row("Date", data.date)}
        ${row("Time", data.time)}
+       ${shopLocationRow(data.addressLine1, data.addressLine2)}
      </table>`,
   );
 }

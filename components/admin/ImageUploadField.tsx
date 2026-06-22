@@ -105,6 +105,11 @@ export function ImageUploadField({
     handleFiles(e.dataTransfer.files);
   };
 
+  const stopFormSubmit = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Field label={label} hint={hint} className={className}>
       <input type="hidden" name={name} value={url} />
@@ -127,6 +132,7 @@ export function ImageUploadField({
             openPicker();
           }
         }}
+        onDragEnter={stopFormSubmit}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
