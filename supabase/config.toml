@@ -1,0 +1,6 @@
+# Linked production project for Supabase GitHub integration.
+# https://supabase.com/docs/guides/deployment/branching/github-integration
+project_id = "ertxeyopvtoclwkfrmso"
+
+[db]
+major_version = 15

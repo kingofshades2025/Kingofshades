@@ -11,7 +11,7 @@
  */
 
 const PROJECT_REF = "ertxeyopvtoclwkfrmso";
-const SITE_URL = "https://kingofshadesnj.com";
+const SITE_URL = "https://www.kingofshadesnj.com";
 const REDIRECT_URLS = [
   "https://kingofshadesnj.com/auth/callback",
   "https://www.kingofshadesnj.com/auth/callback",

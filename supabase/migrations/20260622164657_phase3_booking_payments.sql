@@ -1,8 +1,5 @@
 -- Phase 3: Booking, payments, quotes, scheduling
 
--- ---------------------------------------------------------------------------
--- Appointments — extended fields & in_progress status
--- ---------------------------------------------------------------------------
 alter table public.appointments drop constraint if exists appointments_status_check;
 alter table public.appointments add constraint appointments_status_check
   check (status in ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled'));
@@ -20,9 +17,6 @@ create unique index if not exists appointments_slot_unique
   on public.appointments (appointment_date, appointment_time)
   where status not in ('cancelled');
 
--- ---------------------------------------------------------------------------
--- Customers — portal & Stripe
--- ---------------------------------------------------------------------------
 alter table public.customers
   add column if not exists auth_user_id uuid references auth.users(id) on delete set null,
   add column if not exists stripe_customer_id text,
@@ -30,7 +24,6 @@ alter table public.customers
 
 create index if not exists customers_auth_user_idx on public.customers (auth_user_id);
 
--- Booking-time customer upsert (bypasses admin-only RLS)
 create or replace function public.upsert_booking_customer(
   p_name text,
   p_email text,
@@ -69,9 +62,6 @@ $$;
 
 grant execute on function public.upsert_booking_customer(text, text, text, text) to anon, authenticated;
 
--- ---------------------------------------------------------------------------
--- Site settings — booking / payment / notification config
--- ---------------------------------------------------------------------------
 alter table public.site_settings
   add column if not exists booking_settings jsonb not null default '{
     "slotDurationMinutes": 120,
@@ -97,9 +87,6 @@ alter table public.site_settings
     "smsEnabled": false
   }'::jsonb;
 
--- ---------------------------------------------------------------------------
--- Blocked dates (admin blackout)
--- ---------------------------------------------------------------------------
 create table if not exists public.blocked_dates (
   id uuid primary key default gen_random_uuid(),
   blocked_date date not null unique,
@@ -120,9 +107,6 @@ create policy "Admins manage blocked dates"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Payments
--- ---------------------------------------------------------------------------
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   appointment_id uuid references public.appointments(id) on delete set null,
@@ -159,9 +143,6 @@ create policy "Customers read own payments"
     )
   );
 
--- ---------------------------------------------------------------------------
--- Quote requests
--- ---------------------------------------------------------------------------
 create table if not exists public.quote_requests (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references public.customers(id) on delete set null,
@@ -209,9 +190,6 @@ create trigger quote_requests_updated_at
   before update on public.quote_requests
   for each row execute function public.set_updated_at();
 
--- ---------------------------------------------------------------------------
--- Customer portal — read own appointments
--- ---------------------------------------------------------------------------
 create policy "Customers read own appointments"
   on public.appointments for select
   to authenticated
@@ -223,9 +201,6 @@ create policy "Customers read own appointments"
     or lower(customer_email) = lower(coalesce(auth.jwt()->>'email', ''))
   );
 
--- ---------------------------------------------------------------------------
--- Audit logs
--- ---------------------------------------------------------------------------
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_id uuid,

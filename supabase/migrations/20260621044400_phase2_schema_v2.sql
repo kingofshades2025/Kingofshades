@@ -1,14 +1,8 @@
--- King of Shades — Phase 2 schema
--- Run in Supabase SQL Editor or via Supabase CLI
+-- King of Shades — Phase 2 schema (v2)
+-- Includes service detail/finish image columns.
 
--- ---------------------------------------------------------------------------
--- Extensions
--- ---------------------------------------------------------------------------
 create extension if not exists "pgcrypto";
 
--- ---------------------------------------------------------------------------
--- Admin profiles (linked to auth.users) — table BEFORE is_admin()
--- ---------------------------------------------------------------------------
 create table if not exists public.admin_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
@@ -40,9 +34,6 @@ create policy "Admins can read all profiles"
   to authenticated
   using (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Services
--- ---------------------------------------------------------------------------
 create table if not exists public.services (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
@@ -62,6 +53,10 @@ create table if not exists public.services (
   updated_at timestamptz not null default now()
 );
 
+alter table public.services
+  add column if not exists detail_image_url text,
+  add column if not exists finish_image_url text;
+
 alter table public.services enable row level security;
 
 create policy "Public can read active services"
@@ -75,9 +70,6 @@ create policy "Admins manage services"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Customers
--- ---------------------------------------------------------------------------
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -98,9 +90,6 @@ create policy "Admins manage customers"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Appointments
--- ---------------------------------------------------------------------------
 create table if not exists public.appointments (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references public.customers(id) on delete set null,
@@ -148,9 +137,6 @@ create policy "Admins delete appointments"
   to authenticated
   using (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Gallery
--- ---------------------------------------------------------------------------
 create table if not exists public.gallery_items (
   id uuid primary key default gen_random_uuid(),
   image_url text,
@@ -175,9 +161,6 @@ create policy "Admins manage gallery"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Testimonials
--- ---------------------------------------------------------------------------
 create table if not exists public.testimonials (
   id uuid primary key default gen_random_uuid(),
   customer_name text not null,
@@ -202,9 +185,6 @@ create policy "Admins manage testimonials"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Site settings (singleton row)
--- ---------------------------------------------------------------------------
 create table if not exists public.site_settings (
   id uuid primary key default gen_random_uuid(),
   business_name text not null default 'King of Shades',
@@ -230,9 +210,6 @@ create policy "Admins manage site settings"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Content sections (CMS key-value blocks)
--- ---------------------------------------------------------------------------
 create table if not exists public.content_sections (
   id uuid primary key default gen_random_uuid(),
   section_key text unique not null,
@@ -255,9 +232,6 @@ create policy "Admins manage content sections"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Contact messages
--- ---------------------------------------------------------------------------
 create table if not exists public.contact_messages (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -280,9 +254,6 @@ create policy "Admins read contact messages"
   to authenticated
   using (public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Updated-at trigger
--- ---------------------------------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -313,9 +284,6 @@ create trigger content_sections_updated_at
   before update on public.content_sections
   for each row execute function public.set_updated_at();
 
--- ---------------------------------------------------------------------------
--- Storage: gallery bucket
--- ---------------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
 values ('gallery', 'gallery', true)
 on conflict (id) do nothing;
@@ -340,9 +308,6 @@ create policy "Admins delete gallery images"
   to authenticated
   using (bucket_id = 'gallery' and public.is_admin());
 
--- ---------------------------------------------------------------------------
--- Table privileges (required by PostgREST; RLS still applies)
--- ---------------------------------------------------------------------------
 grant usage on schema public to anon, authenticated;
 
 grant select on public.services to anon, authenticated;
@@ -365,9 +330,3 @@ grant select, update on public.customers to authenticated;
 grant select, update on public.admin_profiles to authenticated;
 
 grant usage, select on all sequences in schema public to anon, authenticated;
-
--- ---------------------------------------------------------------------------
--- Bootstrap admin helper (run manually after creating auth user):
--- insert into public.admin_profiles (id, email, role)
--- values ('YOUR_AUTH_USER_UUID', 'you@email.com', 'super_admin');
--- ---------------------------------------------------------------------------
