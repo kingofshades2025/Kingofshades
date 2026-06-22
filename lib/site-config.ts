@@ -21,6 +21,14 @@ function phoneHref(phone: string) {
   return digits ? `tel:+${digits.startsWith("1") ? digits : `1${digits}`}` : staticSite.phoneHref;
 }
 
+export function getBusinessAddressLines(settings?: SiteSettings | null) {
+  const { address } = toSiteConfig(settings);
+  return {
+    line1: address.line1.trim() || staticSite.address.line1,
+    line2: address.line2.trim() || staticSite.address.line2,
+  };
+}
+
 export function toSiteConfig(settings?: SiteSettings | null): SiteConfig {
   const phone = settings?.phone ?? staticSite.phone;
   const email = settings?.email ?? staticSite.email;

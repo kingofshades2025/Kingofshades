@@ -7,6 +7,7 @@ import { createAppointmentCheckout } from "@/app/actions/payments";
 import { generateAppointmentNumber, estimatePrice } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
 import { getSiteSettings } from "@/lib/queries/public";
+import { getBusinessAddressLines } from "@/lib/site-config";
 import {
   sendEmail,
   getEmailTo,
@@ -225,6 +226,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
 
     try {
       const siteSettings = await getSiteSettings();
+      const businessAddress = getBusinessAddressLines(siteSettings);
 
       await sendEmail({
         to: getEmailTo(),
@@ -242,8 +244,8 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           date,
           time,
           appointmentNumber,
-          addressLine1: siteSettings.address_line1,
-          addressLine2: siteSettings.address_line2,
+          addressLine1: businessAddress.line1,
+          addressLine2: businessAddress.line2,
         }),
       });
     } catch (emailErr) {

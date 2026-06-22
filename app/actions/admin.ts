@@ -7,6 +7,7 @@ import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/type
 import { sendEmail, appointmentConfirmedHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
 import { getSiteBaseUrl } from "@/lib/app-url";
 import { getSiteSettings } from "@/lib/queries/public";
+import { getBusinessAddressLines } from "@/lib/site-config";
 import { formatMoney } from "@/lib/booking/pricing";
 import { createQuoteCheckout } from "@/app/actions/payments";
 
@@ -183,6 +184,7 @@ export async function updateAppointmentStatus(
     if (existing && status === "confirmed" && existing.status !== "confirmed") {
       try {
         const siteSettings = await getSiteSettings();
+        const businessAddress = getBusinessAddressLines(siteSettings);
         await sendEmail({
           to: existing.customer_email,
           subject: `Appointment confirmed — ${existing.appointment_number ?? "King of Shades"}`,
@@ -192,8 +194,8 @@ export async function updateAppointmentStatus(
             date: existing.appointment_date,
             time: existing.appointment_time,
             appointmentNumber: existing.appointment_number ?? undefined,
-            addressLine1: siteSettings.address_line1,
-            addressLine2: siteSettings.address_line2,
+            addressLine1: businessAddress.line1,
+            addressLine2: businessAddress.line2,
           }),
         });
       } catch (emailErr) {
