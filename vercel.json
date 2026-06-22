@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://kingofshadesnj.com",
+    "NEXT_PUBLIC_SITE_URL": "https://www.kingofshadesnj.com",
+    "NEXT_PUBLIC_APP_URL": "https://www.kingofshadesnj.com",
     "NEXT_PUBLIC_SUPABASE_URL": "https://ertxeyopvtoclwkfrmso.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVydHhleW9wdnRvY2x3a2ZybXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5OTYzODAsImV4cCI6MjA5NzU3MjM4MH0.2AbZJHUtrdSUCKCdBzs1gyzbTQ_GVPIAVVZYZEoGTcI",
     "EMAIL_FROM": "King of Shades <contact@kingofshadesnj.com>",
