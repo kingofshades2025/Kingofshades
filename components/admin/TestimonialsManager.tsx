@@ -23,7 +23,10 @@ export function TestimonialsManager({ testimonials }: { testimonials: Testimonia
 
   return (
     <>
-      <AdminPageHeader title="Testimonials" subtitle="Only approved reviews appear on the homepage." />
+      <AdminPageHeader
+        title="Testimonials"
+        subtitle="Customer reviews arrive via invitation after completed appointments. Approve them here to show on the homepage."
+      />
 
       <AdminFeedback message={message} error={error ?? deleteError} className="mb-4" />
 
@@ -54,7 +57,7 @@ export function TestimonialsManager({ testimonials }: { testimonials: Testimonia
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-medium text-white">{t.customer_name}</p>
-                <p className="text-xs text-mist">{t.role} · {t.rating}★ · {t.is_approved ? "Live" : "Hidden"}</p>
+                <p className="text-xs text-mist">{t.role} · {t.rating}★ · {t.is_approved ? "Live" : "Pending approval"}</p>
               </div>
               <Button size="sm" variant="ghost" onClick={() => void handleDelete(t.id)}>
                 Delete

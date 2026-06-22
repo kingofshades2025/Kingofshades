@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
-import { sendEmail, appointmentConfirmedHtml, quoteSentHtml } from "@/lib/email";
+import { sendEmail, appointmentConfirmedHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
+import { getSiteBaseUrl } from "@/lib/app-url";
 import { formatMoney } from "@/lib/booking/pricing";
 import { createQuoteCheckout } from "@/app/actions/payments";
 
@@ -149,15 +150,23 @@ export async function updateAppointmentStatus(
 
     const { data: existing } = await supabase
       .from("appointments")
-      .select("customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status")
+      .select("customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status, review_submitted_at")
       .eq("id", id)
       .maybeSingle();
+
+    const transitioningToCompleted =
+      existing && status === "completed" && existing.status !== "completed";
+    const reviewToken =
+      transitioningToCompleted && !existing.review_submitted_at
+        ? crypto.randomUUID()
+        : undefined;
 
     const { error } = await supabase
       .from("appointments")
       .update({
         status,
         ...(internalNotes !== undefined ? { internal_notes: internalNotes } : {}),
+        ...(reviewToken ? { review_token: reviewToken } : {}),
       })
       .eq("id", id);
     if (error) return { success: false, error: error.message };
@@ -177,6 +186,28 @@ export async function updateAppointmentStatus(
         });
       } catch (emailErr) {
         console.error("[updateAppointmentStatus] email", emailErr);
+      }
+    }
+
+    if (transitioningToCompleted && reviewToken) {
+      try {
+        const reviewUrl = `${getSiteBaseUrl()}/review?token=${reviewToken}`;
+        await sendEmail({
+          to: existing.customer_email,
+          subject: "Your vehicle is ready — King of Shades",
+          html: serviceCompletedHtml({
+            name: existing.customer_name,
+            service: existing.service_title,
+            reviewUrl,
+            appointmentNumber: existing.appointment_number ?? undefined,
+          }),
+        });
+        await supabase
+          .from("appointments")
+          .update({ review_email_sent_at: new Date().toISOString() })
+          .eq("id", id);
+      } catch (emailErr) {
+        console.error("[updateAppointmentStatus] completion email", emailErr);
       }
     }
 

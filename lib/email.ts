@@ -228,6 +228,32 @@ export function bookingConfirmationHtml(data: {
   );
 }
 
+export function serviceCompletedHtml(data: {
+  name: string;
+  service: string;
+  reviewUrl: string;
+  appointmentNumber?: string;
+}) {
+  const first = data.name.split(" ")[0];
+  return emailLayout(
+    `Your vehicle is ready, ${first}!`,
+    `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+       Great news — your King of Shades service is complete and your vehicle is ready for pickup.
+     </p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+       ${row("Appointment #", data.appointmentNumber ?? "—")}
+       ${row("Service", data.service)}
+     </table>
+     <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 8px;">
+       Thank you for trusting us with your vehicle. We'd love to hear how everything went.
+     </p>
+     ${emailButton("Leave a review", data.reviewUrl)}
+     <p style="color:#888;font-size:13px;line-height:1.5;margin:0;">
+       This link is personal to your appointment and can only be used once.
+     </p>`,
+  );
+}
+
 export function appointmentConfirmedHtml(data: {
   name: string;
   service: string;

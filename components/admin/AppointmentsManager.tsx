@@ -73,6 +73,19 @@ export function AppointmentsManager({ appointments }: { appointments: Appointmen
                 </td>
                 <td className="px-4 py-3">
                   <AppointmentStatusBadge status={a.status} />
+                  {a.status === "completed" && (
+                    <div className="mt-1.5 space-y-0.5 text-xs text-mist">
+                      {a.review_email_sent_at && (
+                        <p className="text-gold/80">Review email sent</p>
+                      )}
+                      {a.review_submitted_at && (
+                        <p>Review submitted</p>
+                      )}
+                      {!a.review_email_sent_at && !a.review_submitted_at && (
+                        <p className="text-mist/70">Review pending</p>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">

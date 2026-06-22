@@ -122,6 +122,9 @@ export type Appointment = {
   amount_paid_cents?: number;
   duration_minutes?: number;
   stripe_checkout_session_id?: string | null;
+  review_token?: string | null;
+  review_submitted_at?: string | null;
+  review_email_sent_at?: string | null;
   details: Record<string, string | string[]>;
   created_at: string;
   updated_at: string;
