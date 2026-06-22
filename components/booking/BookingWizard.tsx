@@ -23,6 +23,7 @@ import { bookingServices as defaultBookingServices, tintPercentages } from "@/li
 import { CUSTOM_QUOTE_SERVICE, TINT_TYPES } from "@/lib/booking/defaults";
 import { formatDateLabel } from "@/lib/booking/availability";
 import { BookingCalendar } from "@/components/booking/BookingCalendar";
+import { VehicleFields } from "@/components/booking/VehicleFields";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
@@ -267,9 +268,14 @@ export function BookingWizard({
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               {service === "automotive" ? (
                 <>
-                  <Field label="Vehicle year"><Input placeholder="e.g. 2025" value={details.Year ?? ""} onChange={(e) => setDetail("Year", e.target.value)} /></Field>
-                  <Field label="Vehicle make"><Input placeholder="e.g. Tesla" value={details["Vehicle make"] ?? ""} onChange={(e) => setDetail("Vehicle make", e.target.value)} /></Field>
-                  <Field label="Vehicle model"><Input placeholder="e.g. Model 3" value={details["Vehicle model"] ?? ""} onChange={(e) => setDetail("Vehicle model", e.target.value)} /></Field>
+                  <VehicleFields
+                    year={details.Year ?? ""}
+                    make={details["Vehicle make"] ?? ""}
+                    model={details["Vehicle model"] ?? ""}
+                    onYearChange={(v) => setDetail("Year", v)}
+                    onMakeChange={(v) => setDetail("Vehicle make", v)}
+                    onModelChange={(v) => setDetail("Vehicle model", v)}
+                  />
                   <Field label="Number of windows"><Input type="number" min={1} placeholder="e.g. 5" value={details["Number of windows"] ?? ""} onChange={(e) => setDetail("Number of windows", e.target.value)} /></Field>
                   <Field label="Tint percentage"><Select value={tint} onChange={(e) => setTint(e.target.value)}>{tintPercentages.map((t) => <option key={t}>{t}</option>)}</Select></Field>
                   <Field label="Tint type"><Select value={tintType} onChange={(e) => setTintType(e.target.value)}>{TINT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</Select></Field>
