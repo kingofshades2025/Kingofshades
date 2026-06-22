@@ -197,14 +197,22 @@ export async function upsertCustomer(formData: FormData): Promise<ActionResult> 
     const email = (formData.get("email") as string)?.trim();
     if (!name || !email) return { success: false, error: "Name and email are required." };
 
+    if (id && !isUuid(id)) {
+      return {
+        success: false,
+        error: "Invalid customer record. Refresh the page and try again.",
+      };
+    }
+
     const payload = {
       name,
       email,
       phone: (formData.get("phone") as string)?.trim() || null,
+      address: (formData.get("address") as string)?.trim() || null,
       notes: (formData.get("notes") as string)?.trim() || null,
     };
 
-    const { error } = id && isUuid(id)
+    const { error } = id
       ? await supabase.from("customers").update(payload).eq("id", id)
       : await supabase.from("customers").insert(payload);
 
@@ -214,6 +222,39 @@ export async function upsertCustomer(formData: FormData): Promise<ActionResult> 
   } catch (err) {
     logActionError("upsertCustomer", err);
     return { success: false, error: "Could not save customer." };
+  }
+}
+
+export async function deleteCustomer(id: string): Promise<ActionResult> {
+  try {
+    if (!isUuid(id)) return { success: false, error: "Invalid customer ID." };
+    const { supabase } = await requireAdmin();
+
+    const { error } = await supabase.from("customers").delete().eq("id", id);
+    if (error) {
+      if (error.code === "23503") {
+        return {
+          success: false,
+          error:
+            "This customer is linked to other records that could not be updated. Remove those links first.",
+        };
+      }
+      if (error.message?.toLowerCase().includes("permission denied")) {
+        return {
+          success: false,
+          error: "Delete permission is not configured. Contact support or run the latest database migration.",
+        };
+      }
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin/customers");
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    return { success: true };
+  } catch (err) {
+    logActionError("deleteCustomer", err);
+    return { success: false, error: "Could not delete customer." };
   }
 }
 

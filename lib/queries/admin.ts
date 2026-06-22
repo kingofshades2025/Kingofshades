@@ -128,6 +128,22 @@ export async function getDashboardStats() {
   };
 }
 
+export async function getCustomerAppointmentCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("customer_id")
+    .not("customer_id", "is", null);
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = row.customer_id as string;
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function getCustomerAppointments(customerId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
