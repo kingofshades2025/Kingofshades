@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
 import { sendEmail, appointmentConfirmedHtml, quoteSentHtml } from "@/lib/email";
 import { formatMoney } from "@/lib/booking/pricing";
+import { createQuoteCheckout } from "@/app/actions/payments";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -564,6 +565,7 @@ export async function updateQuoteStatus(
       amount
     ) {
       try {
+        const checkout = await createQuoteCheckout({ quoteId: id });
         await sendEmail({
           to: existing.customer_email,
           subject: `Your quote from King of Shades — ${existing.service_type}`,
@@ -572,6 +574,7 @@ export async function updateQuoteStatus(
             serviceType: existing.service_type,
             quotedAmount: formatMoney(amount),
             notes: adminNotes,
+            paymentUrl: checkout.success ? checkout.url : undefined,
           }),
         });
       } catch (emailErr) {

@@ -82,6 +82,14 @@ function row(label: string, value: string) {
   return `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#666;font-size:14px;width:140px;">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#111;font-size:14px;">${value}</td></tr>`;
 }
 
+function emailButton(label: string, href: string) {
+  return `<table cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+    <tr><td>
+      <a href="${href}" style="display:inline-block;background:#d4af37;color:#0a0a0a;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 28px;border-radius:6px;">${label}</a>
+    </td></tr>
+  </table>`;
+}
+
 function emailLayout(title: string, body: string) {
   return `<!DOCTYPE html>
 <html>
@@ -236,8 +244,18 @@ export function quoteSentHtml(data: {
   serviceType: string;
   quotedAmount: string;
   notes?: string;
+  paymentUrl?: string;
 }) {
   const first = data.name.split(" ")[0];
+  const paymentBlock = data.paymentUrl
+    ? `${emailButton("Pay now with Stripe", data.paymentUrl)}
+       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+         Secure checkout — pay online to approve your quote and lock in your project.
+       </p>`
+    : `<p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
+         Reply to this email or call us to approve the quote and schedule your project.
+       </p>`;
+
   return emailLayout(
     `Your quote is ready, ${first}`,
     `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
@@ -248,9 +266,7 @@ export function quoteSentHtml(data: {
        ${row("Quoted amount", data.quotedAmount)}
        ${data.notes ? row("Notes", data.notes.replace(/\n/g, "<br>")) : ""}
      </table>
-     <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
-       Reply to this email or call us to approve the quote and schedule your project.
-     </p>`,
+     ${paymentBlock}`,
   );
 }
 
@@ -261,6 +277,7 @@ export function quoteNotificationHtml(data: {
   serviceType: string;
   description: string;
   measurements: string;
+  adminQuoteUrl?: string;
 }) {
   const rows = [
     row("Name", data.name),
@@ -271,9 +288,17 @@ export function quoteNotificationHtml(data: {
     row("Measurements", data.measurements.replace(/\n/g, "<br>") || "—"),
   ].join("");
 
+  const actionBlock = data.adminQuoteUrl
+    ? `${emailButton("Send Quote", data.adminQuoteUrl)}
+       <p style="color:#888;font-size:13px;line-height:1.5;margin:0;">
+         Open in admin, enter the quoted amount, and click <strong style="color:#555;">quote sent</strong> to email the customer a Stripe payment link.
+       </p>`
+    : "";
+
   return emailLayout(
     "New quote request",
     `<p style="color:#555;font-size:15px;margin:0 0 20px;">A customer submitted a custom quote request.</p>
+     ${actionBlock}
      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;">${rows}</table>`,
   );
 }

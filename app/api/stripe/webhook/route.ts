@@ -26,9 +26,43 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const appointmentId = session.metadata?.appointmentId;
+    const quoteId = session.metadata?.quoteId;
     const paymentType = session.metadata?.paymentType ?? "deposit";
 
-    if (appointmentId) {
+    if (quoteId) {
+      try {
+        const admin = createAdminClient();
+
+        const { data: existingPayment } = await admin
+          .from("payments")
+          .select("status")
+          .eq("stripe_checkout_session_id", session.id)
+          .maybeSingle();
+
+        if (existingPayment?.status === "succeeded") {
+          return NextResponse.json({ received: true, duplicate: true });
+        }
+
+        await admin
+          .from("payments")
+          .update({
+            status: "succeeded",
+            stripe_payment_intent_id:
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id ?? null,
+          })
+          .eq("stripe_checkout_session_id", session.id);
+
+        await admin
+          .from("quote_requests")
+          .update({ status: "approved" })
+          .eq("id", quoteId);
+      } catch (err) {
+        console.error("[stripe webhook quote]", err);
+        return NextResponse.json({ error: "Update failed" }, { status: 500 });
+      }
+    } else if (appointmentId) {
       try {
         const admin = createAdminClient();
 

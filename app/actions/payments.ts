@@ -106,6 +106,80 @@ export async function createAppointmentCheckout(opts: {
   }
 }
 
+export async function createQuoteCheckout(opts: { quoteId: string }): Promise<CheckoutResult> {
+  if (!isStripeConfigured()) {
+    return { success: false, error: "Online payments are not configured yet." };
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: "Database is not configured." };
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data: quote, error } = await admin
+      .from("quote_requests")
+      .select("*")
+      .eq("id", opts.quoteId)
+      .maybeSingle();
+
+    if (error || !quote) {
+      return { success: false, error: "Quote not found." };
+    }
+
+    const amountCents = quote.quoted_amount_cents ?? 0;
+    if (amountCents <= 0) {
+      return { success: false, error: "Quote amount is not set." };
+    }
+
+    const baseUrl = getSiteBaseUrl();
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: quote.customer_email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: amountCents,
+            product_data: {
+              name: `Quote — ${quote.service_type}`,
+              description: quote.description.slice(0, 500),
+            },
+          },
+        },
+      ],
+      metadata: {
+        quoteId: quote.id,
+        paymentType: "invoice",
+      },
+      success_url: `${baseUrl}/portal?quotePaid=1`,
+      cancel_url: `${baseUrl}/portal?quoteCancelled=1`,
+    });
+
+    await admin.from("payments").insert({
+      appointment_id: null,
+      customer_id: quote.customer_id,
+      stripe_checkout_session_id: session.id,
+      amount_cents: amountCents,
+      payment_type: "invoice",
+      status: "pending",
+      metadata: { quoteId: quote.id },
+    });
+
+    if (!session.url) {
+      return { success: false, error: "Could not start checkout." };
+    }
+
+    return { success: true, url: session.url };
+  } catch (err) {
+    console.error("[createQuoteCheckout]", err);
+    return { success: false, error: "Could not start payment. Please try again." };
+  }
+}
+
 export async function getBookingPriceEstimate(opts: {
   serviceSlug: string;
   tintType?: string;

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getSiteBaseUrl } from "@/lib/app-url";
 import { sendEmail, getEmailTo, quoteNotificationHtml } from "@/lib/email";
 
 export type QuoteResult =
@@ -34,27 +35,59 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
       });
       customerId = customerIdResult ?? null;
 
-      const { error } = await admin.from("quote_requests").insert({
-        customer_id: customerId,
-        customer_name: name,
-        customer_email: email,
-        customer_phone: phone,
-        service_type: serviceType,
-        description,
-        measurements,
-        status: "new",
-      });
+      const { data: inserted, error } = await admin
+        .from("quote_requests")
+        .insert({
+          customer_id: customerId,
+          customer_name: name,
+          customer_email: email,
+          customer_phone: phone,
+          service_type: serviceType,
+          description,
+          measurements,
+          status: "new",
+        })
+        .select("id")
+        .single();
 
       if (error) {
         console.error("[quote]", error.message);
         return { success: false, error: "Could not submit quote request." };
       }
+
+      const quoteId = inserted?.id;
+      await sendEmail({
+        to: getEmailTo(),
+        subject: `New quote request: ${name} — ${serviceType}`,
+        html: quoteNotificationHtml({
+          name,
+          email,
+          phone: phone ?? "",
+          serviceType,
+          description,
+          measurements: measurements ?? "",
+          adminQuoteUrl: quoteId
+            ? `${getSiteBaseUrl()}/admin/quotes?id=${quoteId}`
+            : undefined,
+        }),
+        replyTo: email,
+      });
+
+      revalidatePath("/admin/quotes");
+      return { success: true };
     }
 
     await sendEmail({
       to: getEmailTo(),
       subject: `New quote request: ${name} — ${serviceType}`,
-      html: quoteNotificationHtml({ name, email, phone: phone ?? "", serviceType, description, measurements: measurements ?? "" }),
+      html: quoteNotificationHtml({
+        name,
+        email,
+        phone: phone ?? "",
+        serviceType,
+        description,
+        measurements: measurements ?? "",
+      }),
       replyTo: email,
     });
 
