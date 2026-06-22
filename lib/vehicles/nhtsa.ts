@@ -1,4 +1,8 @@
+import { isTopVehicleMake } from "@/lib/vehicles/popular-makes";
+
 const VPIC_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles";
+
+export const MIN_VEHICLE_YEAR = 2000;
 
 export type VehicleMake = {
   id: number;
@@ -54,14 +58,16 @@ export async function fetchVehicleMakes(): Promise<VehicleMake[]> {
     }
   }
 
-  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return [...byId.values()]
+    .filter((make) => isTopVehicleMake(make.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function fetchVehicleModels(
   makeId: number,
   year?: number,
 ): Promise<VehicleModel[]> {
-  const yearNum = year && year >= 1995 ? year : undefined;
+  const yearNum = year && year >= MIN_VEHICLE_YEAR ? year : undefined;
   const url = yearNum
     ? `${VPIC_BASE}/GetModelsForMakeIdYear/makeId/${makeId}/modelyear/${yearNum}?format=json`
     : `${VPIC_BASE}/GetModelsForMakeId/${makeId}?format=json`;
@@ -81,7 +87,7 @@ export async function fetchVehicleModels(
   return models.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function buildYearOptions(start = 1995): number[] {
+export function buildYearOptions(start = MIN_VEHICLE_YEAR): number[] {
   const current = new Date().getFullYear() + 1;
   const years: number[] = [];
   for (let y = current; y >= start; y--) years.push(y);

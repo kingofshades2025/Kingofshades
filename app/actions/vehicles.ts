@@ -3,7 +3,7 @@
 import { unstable_cache } from "next/cache";
 import { fetchVehicleMakes, fetchVehicleModels } from "@/lib/vehicles/nhtsa";
 
-const getMakesCached = unstable_cache(fetchVehicleMakes, ["vehicle-makes"], {
+const getMakesCached = unstable_cache(fetchVehicleMakes, ["vehicle-makes-top30"], {
   revalidate: 86400,
 });
 
