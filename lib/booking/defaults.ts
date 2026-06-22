@@ -21,6 +21,13 @@ export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   acceptFullPayment: true,
   depositPercent: 25,
   taxRatePercent: 8.875,
+  fallbackBaseCents: 19900,
+  windowFactorPerWindow: 0.15,
+  windowFactorBase: 0.85,
+  windowFactorMax: 2.5,
+  tintCarbonMultiplier: 1,
+  tintCeramicMultiplier: 1.25,
+  tintPremiumMultiplier: 1.45,
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {

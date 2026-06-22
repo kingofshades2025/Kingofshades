@@ -206,6 +206,52 @@ export function SettingsManager({
 
 
 
+        <h3 className="sm:col-span-2 mt-4 font-display text-lg font-semibold text-white">Pricing formula</h3>
+
+        <p className="sm:col-span-2 text-sm text-mist">
+          Booking subtotal = service base price × tint multiplier × window factor. Tax and deposit apply to the total.
+          Set each service&apos;s <strong className="text-snow">Base price ($)</strong> under Admin → Services.
+        </p>
+
+        <Field
+          label="Default base price ($)"
+          hint="Used when a service has no base price set."
+        >
+          <Input
+            name="fallback_base_dollars"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue={(ops.payment.fallbackBaseCents / 100).toFixed(2)}
+          />
+        </Field>
+
+        <Field label="Window factor — per extra window" hint="Added per window (e.g. 0.15).">
+          <Input name="window_factor_per_window" type="number" step="0.01" defaultValue={ops.payment.windowFactorPerWindow} />
+        </Field>
+
+        <Field label="Window factor — starting value" hint="Base multiplier before windows (e.g. 0.85).">
+          <Input name="window_factor_base" type="number" step="0.01" defaultValue={ops.payment.windowFactorBase} />
+        </Field>
+
+        <Field label="Window factor — maximum cap" hint="Ceiling for window multiplier (e.g. 2.5).">
+          <Input name="window_factor_max" type="number" step="0.01" defaultValue={ops.payment.windowFactorMax} />
+        </Field>
+
+        <Field label="Carbon tint multiplier">
+          <Input name="tint_carbon_multiplier" type="number" step="0.01" defaultValue={ops.payment.tintCarbonMultiplier} />
+        </Field>
+
+        <Field label="Ceramic tint multiplier">
+          <Input name="tint_ceramic_multiplier" type="number" step="0.01" defaultValue={ops.payment.tintCeramicMultiplier} />
+        </Field>
+
+        <Field label="Premium ceramic multiplier">
+          <Input name="tint_premium_multiplier" type="number" step="0.01" defaultValue={ops.payment.tintPremiumMultiplier} />
+        </Field>
+
+
+
         <h3 className="sm:col-span-2 mt-4 font-display text-lg font-semibold text-white">Notifications</h3>
 
         <SettingCheckbox name="email_reminders_enabled" label="Email reminders" defaultChecked={ops.notification.emailRemindersEnabled} />

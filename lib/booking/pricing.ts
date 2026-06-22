@@ -1,20 +1,30 @@
-import { TINT_TYPES } from "@/lib/booking/defaults";
 import type { PaymentSettings } from "@/lib/types/database";
 
 export type PriceEstimate = {
   baseCents: number;
   tintMultiplier: number;
+  windowFactor: number;
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
   depositCents: number;
 };
 
-const FALLBACK_BASE_CENTS = 34000;
+export function getTintMultiplier(tintType: string | undefined, payment: PaymentSettings): number {
+  const id = tintType?.toLowerCase() ?? "";
+  if (id.includes("premium")) return payment.tintPremiumMultiplier;
+  if (id.includes("ceramic")) return payment.tintCeramicMultiplier;
+  if (id.includes("carbon")) return payment.tintCarbonMultiplier;
+  return payment.tintCarbonMultiplier;
+}
 
-export function getTintMultiplier(tintType?: string): number {
-  const match = TINT_TYPES.find((t) => t.id === tintType || t.label === tintType);
-  return match?.multiplier ?? 1;
+export function getWindowFactor(windowCount: number | undefined, payment: PaymentSettings): number {
+  if (!windowCount || windowCount < 1) return 1;
+  const windows = Math.max(1, windowCount);
+  return Math.min(
+    windows * payment.windowFactorPerWindow + payment.windowFactorBase,
+    payment.windowFactorMax,
+  );
 }
 
 export function estimatePrice(opts: {
@@ -23,22 +33,24 @@ export function estimatePrice(opts: {
   windowCount?: number;
   paymentSettings: PaymentSettings;
 }): PriceEstimate {
-  const base = opts.basePriceCents && opts.basePriceCents > 0
-    ? opts.basePriceCents
-    : FALLBACK_BASE_CENTS;
+  const payment = opts.paymentSettings;
+  const base =
+    opts.basePriceCents && opts.basePriceCents > 0
+      ? opts.basePriceCents
+      : payment.fallbackBaseCents;
 
-  const windows = Math.max(1, opts.windowCount ?? 1);
-  const tintMultiplier = getTintMultiplier(opts.tintType);
-  const windowFactor = opts.windowCount ? Math.min(windows * 0.15 + 0.85, 2.5) : 1;
+  const tintMultiplier = getTintMultiplier(opts.tintType, payment);
+  const windowFactor = getWindowFactor(opts.windowCount, payment);
 
   const subtotalCents = Math.round(base * tintMultiplier * windowFactor);
-  const taxCents = Math.round(subtotalCents * (opts.paymentSettings.taxRatePercent / 100));
+  const taxCents = Math.round(subtotalCents * (payment.taxRatePercent / 100));
   const totalCents = subtotalCents + taxCents;
-  const depositCents = Math.round(totalCents * (opts.paymentSettings.depositPercent / 100));
+  const depositCents = Math.round(totalCents * (payment.depositPercent / 100));
 
   return {
     baseCents: base,
     tintMultiplier,
+    windowFactor,
     subtotalCents,
     taxCents,
     totalCents,

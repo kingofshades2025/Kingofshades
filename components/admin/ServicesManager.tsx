@@ -84,8 +84,22 @@ export function ServicesManager({
                 <option value="decals">Decals</option>
               </Select>
             </Field>
-            <Field label="Price label">
+            <Field label="Price label" hint="Shown on the website, e.g. “From $199”.">
               <Input name="price_label" defaultValue={editing.price_label ?? ""} placeholder="$199" />
+            </Field>
+            <Field label="Base price ($)" hint="Used at checkout. Leave blank to use the default from Settings.">
+              <Input
+                name="price_dollars"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="199"
+                defaultValue={
+                  editing.price_cents != null && editing.price_cents > 0
+                    ? (editing.price_cents / 100).toFixed(2)
+                    : ""
+                }
+              />
             </Field>
             <Field label="Tagline" className="sm:col-span-2">
               <Input name="tagline" defaultValue={editing.tagline ?? ""} />

@@ -37,6 +37,15 @@ export type PaymentSettings = {
   acceptFullPayment: boolean;
   depositPercent: number;
   taxRatePercent: number;
+  /** Used when a service has no base price set (cents). */
+  fallbackBaseCents: number;
+  /** Per-window add-on: factor = min(windows × perWindow + base, max). */
+  windowFactorPerWindow: number;
+  windowFactorBase: number;
+  windowFactorMax: number;
+  tintCarbonMultiplier: number;
+  tintCeramicMultiplier: number;
+  tintPremiumMultiplier: number;
 };
 
 export type NotificationSettings = {

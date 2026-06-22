@@ -77,6 +77,12 @@ export async function upsertService(formData: FormData): Promise<ActionResult> {
       (formData.get("category") as string)?.trim() ||
       "automotive";
 
+    const priceDollarsRaw = (formData.get("price_dollars") as string)?.trim();
+    const priceCents =
+      priceDollarsRaw && !Number.isNaN(Number(priceDollarsRaw))
+        ? Math.round(Number(priceDollarsRaw) * 100)
+        : null;
+
     const payload = {
       slug: (formData.get("slug") as string)?.trim() || slugify(title),
       title,
@@ -84,6 +90,7 @@ export async function upsertService(formData: FormData): Promise<ActionResult> {
       description: (formData.get("description") as string)?.trim() || null,
       category: accent,
       price_label: (formData.get("price_label") as string)?.trim() || null,
+      price_cents: priceCents,
       accent,
       is_active: formData.get("is_active") === "true",
       benefits: parseBenefits(formData),
@@ -444,6 +451,13 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
         acceptFullPayment: formData.get("accept_full_payment") === "true",
         depositPercent: Number(formData.get("deposit_percent") || 25),
         taxRatePercent: Number(formData.get("tax_rate_percent") || 8.875),
+        fallbackBaseCents: Math.round(Number(formData.get("fallback_base_dollars") || 199) * 100),
+        windowFactorPerWindow: Number(formData.get("window_factor_per_window") || 0.15),
+        windowFactorBase: Number(formData.get("window_factor_base") || 0.85),
+        windowFactorMax: Number(formData.get("window_factor_max") || 2.5),
+        tintCarbonMultiplier: Number(formData.get("tint_carbon_multiplier") || 1),
+        tintCeramicMultiplier: Number(formData.get("tint_ceramic_multiplier") || 1.25),
+        tintPremiumMultiplier: Number(formData.get("tint_premium_multiplier") || 1.45),
       },
       notification_settings: {
         emailRemindersEnabled: formData.get("email_reminders_enabled") === "true",
