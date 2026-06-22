@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
 import { sendEmail, appointmentConfirmedHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
 import { getSiteBaseUrl } from "@/lib/app-url";
@@ -388,7 +389,8 @@ export async function deleteTestimonial(id: string): Promise<ActionResult> {
 
 export async function saveSiteSettings(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await requireAdmin();
+    await requireAdmin();
+    const supabase = createAdminClient();
     const id = (formData.get("id") as string | null)?.trim() || null;
 
     const hoursLines = (formData.get("business_hours_lines") as string) ?? "";
@@ -468,7 +470,8 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
 
 export async function saveContentSection(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await requireAdmin();
+    await requireAdmin();
+    const supabase = createAdminClient();
     const section_key = (formData.get("section_key") as string)?.trim();
     if (!section_key) return { success: false, error: "Section key is required." };
 
