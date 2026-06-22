@@ -10,6 +10,8 @@ import { AdminFeedback } from "@/components/admin/AdminFeedback";
 
 import { AdminPageHeader } from "@/components/admin/AdminUI";
 
+import { UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
+
 import { Button } from "@/components/ui/Button";
 
 import { Field, Input } from "@/components/ui/Field";
@@ -116,6 +118,14 @@ export function QuotesManager({
                       <p className="font-medium text-white">{q.customer_name}</p>
                       <p className="text-mist">{q.customer_email}</p>
                       <p className="mt-2 max-w-xs text-xs text-mist">{q.description}</p>
+                      {q.photo_urls?.length > 0 && (
+                        <div className="mt-3 max-w-xs">
+                          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-mist">
+                            Attachments ({q.photo_urls.length})
+                          </p>
+                          <UploadedFilesGallery urls={q.photo_urls} compact />
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-snow/85">{q.service_type}</td>
                     <td className="px-5 py-4 capitalize text-snow/85">{q.status.replace("_", " ")}</td>

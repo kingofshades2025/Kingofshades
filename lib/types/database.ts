@@ -122,7 +122,7 @@ export type Appointment = {
   amount_paid_cents?: number;
   duration_minutes?: number;
   stripe_checkout_session_id?: string | null;
-  details: Record<string, string>;
+  details: Record<string, string | string[]>;
   created_at: string;
   updated_at: string;
   customers?: Customer | null;

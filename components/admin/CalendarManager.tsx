@@ -19,6 +19,7 @@ import { formatMoney } from "@/lib/booking/pricing";
 import { toDateIso } from "@/lib/booking/availability";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { photoUrlsFromDetails, UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -396,8 +397,10 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                 <div>
                   <p className="mb-2 text-xs font-medium uppercase tracking-wider text-mist">Service details</p>
                   <dl className="space-y-2 rounded-xl border border-line bg-charcoal-light/50 p-3 text-sm">
-                    {Object.entries(detailAppt.details).map(([key, value]) =>
-                      value ? (
+                    {Object.entries(detailAppt.details)
+                      .filter(([key]) => key !== "photo_urls")
+                      .map(([key, value]) =>
+                      typeof value === "string" && value ? (
                         <div key={key} className="flex justify-between gap-4">
                           <dt className="text-mist">{key}</dt>
                           <dd className="text-right text-snow">{value}</dd>
@@ -405,6 +408,13 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                       ) : null,
                     )}
                   </dl>
+                </div>
+              )}
+
+              {photoUrlsFromDetails(detailAppt.details).length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-mist">Reference files</p>
+                  <UploadedFilesGallery urls={photoUrlsFromDetails(detailAppt.details)} />
                 </div>
               )}
 

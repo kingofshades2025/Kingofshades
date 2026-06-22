@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { Appointment, AppointmentStatus } from "@/lib/types/database";
 import { updateAppointmentStatus } from "@/app/actions/admin";
 import { AdminPageHeader, AppointmentStatusBadge } from "@/components/admin/AdminUI";
+import { photoUrlsFromDetails, UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -60,6 +61,11 @@ export function AppointmentsManager({ appointments }: { appointments: Appointmen
                 <td className="px-4 py-3">
                   <p className="font-medium text-white">{a.customer_name}</p>
                   <p className="text-xs text-mist">{a.customer_email}</p>
+                  {photoUrlsFromDetails(a.details).length > 0 && (
+                    <div className="mt-2">
+                      <UploadedFilesGallery urls={photoUrlsFromDetails(a.details)} compact />
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-mist">{a.service_title}</td>
                 <td className="px-4 py-3 text-mist">

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getSiteBaseUrl } from "@/lib/app-url";
 import { sendEmail, getEmailTo, quoteNotificationHtml } from "@/lib/email";
+import { filesFromFormData, uploadClientFiles } from "@/lib/uploads/storage";
 
 export type QuoteResult =
   | { success: true }
@@ -22,9 +23,33 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
     return { success: false, error: "Name, email, service, and description are required." };
   }
 
+  const pendingFiles = filesFromFormData(formData);
+
+  function parsePreUploadedUrls(): string[] {
+    const raw = (formData.get("photo_urls") as string | null)?.trim();
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((u): u is string => typeof u === "string" && u.length > 0);
+    } catch {
+      return [];
+    }
+  }
+
   try {
     if (isSupabaseConfigured()) {
       const admin = createAdminClient();
+
+      let photoUrls = parsePreUploadedUrls();
+      if (pendingFiles.length > 0) {
+        const upload = await uploadClientFiles(pendingFiles, "quotes");
+        if (!upload.success) return upload;
+        photoUrls = [...photoUrls, ...upload.urls];
+      }
+      if (photoUrls.length > 5) {
+        return { success: false, error: "You can upload up to 5 files." };
+      }
 
       let customerId: string | null = null;
       const { data: customerIdResult } = await admin.rpc("upsert_booking_customer", {
@@ -45,6 +70,7 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
           service_type: serviceType,
           description,
           measurements,
+          photo_urls: photoUrls,
           status: "new",
         })
         .select("id")
@@ -66,6 +92,7 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
           serviceType,
           description,
           measurements: measurements ?? "",
+          photoUrls,
           adminQuoteUrl: quoteId
             ? `${getSiteBaseUrl()}/admin/quotes?id=${quoteId}`
             : undefined,
@@ -87,6 +114,7 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
         serviceType,
         description,
         measurements: measurements ?? "",
+        photoUrls: [],
       }),
       replyTo: email,
     });

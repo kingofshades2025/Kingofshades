@@ -160,12 +160,23 @@ export function bookingNotificationHtml(data: {
   phone: string;
   notes: string;
   details: Record<string, string>;
+  photoUrls?: string[];
   appointmentNumber?: string;
 }) {
   const detailRows = Object.entries(data.details)
-    .filter(([, v]) => v.trim())
-    .map(([k, v]) => row(k, v))
+    .filter(([, v]) => typeof v === "string" && v.trim())
+    .map(([k, v]) => row(k, v as string))
     .join("");
+
+  const photoRows =
+    data.photoUrls && data.photoUrls.length > 0
+      ? data.photoUrls
+          .map(
+            (url, i) =>
+              `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#666;font-size:14px;width:140px;">File ${i + 1}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;"><a href="${url}" style="color:#d4af37;">View attachment</a></td></tr>`,
+          )
+          .join("")
+      : "";
 
   const rows = [
     row("Appointment #", data.appointmentNumber ?? "—"),
@@ -179,9 +190,9 @@ export function bookingNotificationHtml(data: {
     row("Notes", data.notes.replace(/\n/g, "<br>") || "—"),
   ].join("");
 
-  const detailsBlock = detailRows
+  const detailsBlock = detailRows || photoRows
     ? `<h3 style="margin:24px 0 12px;color:#111;font-size:16px;">Service details</h3>
-       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;">${detailRows}</table>`
+       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;">${detailRows}${photoRows}</table>`
     : "";
 
   return emailLayout(
@@ -277,8 +288,19 @@ export function quoteNotificationHtml(data: {
   serviceType: string;
   description: string;
   measurements: string;
+  photoUrls?: string[];
   adminQuoteUrl?: string;
 }) {
+  const photoRows =
+    data.photoUrls && data.photoUrls.length > 0
+      ? data.photoUrls
+          .map(
+            (url, i) =>
+              row(`Attachment ${i + 1}`, `<a href="${url}" style="color:#d4af37;">View file</a>`),
+          )
+          .join("")
+      : "";
+
   const rows = [
     row("Name", data.name),
     row("Email", data.email),
@@ -286,6 +308,7 @@ export function quoteNotificationHtml(data: {
     row("Service", data.serviceType),
     row("Description", data.description.replace(/\n/g, "<br>")),
     row("Measurements", data.measurements.replace(/\n/g, "<br>") || "—"),
+    photoRows,
   ].join("");
 
   const actionBlock = data.adminQuoteUrl

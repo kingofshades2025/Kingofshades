@@ -28,6 +28,7 @@ export type BookingPayload = {
   address?: string;
   notes: string;
   details: Record<string, string>;
+  photoUrls?: string[];
   paymentMode?: "none" | "deposit" | "full";
   windowCount?: number;
 };
@@ -178,10 +179,11 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
 
       appointmentNumber = generateAppointmentNumber();
 
-      const details = {
+      const details: Record<string, string | string[]> = {
         ...payload.details,
         ...(payload.tint ? { "Tint percentage": payload.tint } : {}),
         ...(payload.tintType ? { "Tint type": payload.tintType } : {}),
+        ...(payload.photoUrls?.length ? { photo_urls: payload.photoUrls } : {}),
       };
 
       const { data: created, error } = await admin
@@ -225,7 +227,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
       await sendEmail({
         to: getEmailTo(),
         subject: `New booking ${appointmentNumber ?? ""}: ${name} — ${service}`,
-        html: bookingNotificationHtml({ ...payload, appointmentNumber }),
+        html: bookingNotificationHtml({ ...payload, appointmentNumber, photoUrls: payload.photoUrls }),
         replyTo: email,
       });
 

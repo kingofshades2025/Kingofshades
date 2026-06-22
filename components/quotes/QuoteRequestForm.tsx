@@ -2,13 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { submitQuoteRequest } from "@/app/actions/quotes";
+import { uploadQuoteFiles } from "@/app/actions/uploads";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { ClientFileUpload } from "@/components/ui/ClientFileUpload";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 export function QuoteRequestForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
   return submitted ? (
@@ -31,6 +34,7 @@ export function QuoteRequestForm() {
         });
       }}
     >
+      <input type="hidden" name="photo_urls" value={JSON.stringify(photoUrls)} />
       <Field label="Full name"><Input name="name" required placeholder="Jordan Carter" /></Field>
       <Field label="Email"><Input name="email" type="email" required placeholder="you@email.com" /></Field>
       <Field label="Phone"><Input name="phone" type="tel" placeholder="(555) 123-4567" /></Field>
@@ -50,6 +54,13 @@ export function QuoteRequestForm() {
       <Field label="Project description" className="sm:col-span-2">
         <Textarea name="description" required rows={5} placeholder="Tell us about your project, goals, and timeline…" />
       </Field>
+      <ClientFileUpload
+        value={photoUrls}
+        onChange={setPhotoUrls}
+        uploadAction={uploadQuoteFiles}
+        label="Reference photos / files (optional)"
+        hint="Photos of windows, vehicles, or design inspiration — up to 5 files, 5 MB each"
+      />
       {error && (
         <div className="sm:col-span-2 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
