@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -71,10 +71,16 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
 
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
-  const [selectedIso, setSelectedIso] = useState<string | null>(todayIso);
+  const [selectedIso, setSelectedIso] = useState<string | null>(null);
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
+  const dayPanelRef = useRef<HTMLDivElement>(null);
 
   const byDate = useMemo(() => groupByDate(appointments), [appointments]);
+
+  useEffect(() => {
+    if (!selectedIso || !dayPanelRef.current) return;
+    dayPanelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedIso]);
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -92,8 +98,13 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
   }
 
   function selectDate(iso: string) {
-    setSelectedIso((prev) => (prev === iso ? null : iso));
+    setSelectedIso(iso);
     setDetailAppt(null);
+  }
+
+  function openAppointment(iso: string, appt: Appointment) {
+    setSelectedIso(iso);
+    setDetailAppt(appt);
   }
 
   function goToToday() {
@@ -159,12 +170,19 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
             const overflow = dayAppts.length - preview.length;
 
             return (
-              <button
+              <div
                 key={iso}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => selectDate(iso)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectDate(iso);
+                  }
+                }}
                 className={cn(
-                  "group flex min-h-[5.5rem] flex-col rounded-xl border p-1.5 text-left transition-all sm:min-h-[6.5rem] sm:p-2",
+                  "group flex min-h-[5.5rem] cursor-pointer flex-col rounded-xl border p-1.5 text-left transition-all sm:min-h-[6.5rem] sm:p-2",
                   isSelected
                     ? "border-gold/60 bg-gold/10 ring-1 ring-gold/30"
                     : "border-line/80 bg-charcoal-light/40 hover:border-gold/30 hover:bg-charcoal-light/70",
@@ -183,10 +201,15 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
 
                 <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
                   {preview.map((a) => (
-                    <span
+                    <button
                       key={a.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAppointment(iso, a);
+                      }}
                       className={cn(
-                        "flex items-center gap-1 truncate rounded px-1 py-0.5 text-[10px] leading-tight text-snow/90 sm:text-[11px]",
+                        "flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight text-snow/90 transition-colors hover:ring-1 hover:ring-gold/40 sm:text-[11px]",
                         statusCard[a.status] ?? statusCard.pending,
                       )}
                     >
@@ -194,13 +217,13 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                         className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusDot[a.status] ?? statusDot.pending)}
                       />
                       <span className="truncate">{a.appointment_time}</span>
-                    </span>
+                    </button>
                   ))}
                   {overflow > 0 && (
                     <span className="px-1 text-[10px] font-medium text-gold">+{overflow} more</span>
                   )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -216,7 +239,10 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
       </div>
 
       {selectedIso && (
-        <div className="mt-6 rounded-2xl border border-line bg-surface/70 p-4 sm:p-6">
+        <div
+          ref={dayPanelRef}
+          className="mt-6 scroll-mt-24 rounded-2xl border border-line bg-surface/70 p-4 sm:p-6"
+        >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h3 className="font-display text-lg font-semibold text-white">{formatDayLabel(selectedIso)}</h3>
