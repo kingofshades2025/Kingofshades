@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { getAppointmentConfirmation } from "@/app/actions/confirmation";
+import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { Button } from "@/components/ui/Button";
 
 export default async function BookingConfirmationPage({
@@ -36,6 +36,12 @@ export default async function BookingConfirmationPage({
                 {appointment.formattedTotal ? ` of ${appointment.formattedTotal}` : ""}
               </p>
             )}
+            {appointment.breakdown?.length ? (
+              <div className="mt-6 rounded-2xl border border-line bg-charcoal-light p-5 text-left">
+                <p className="mb-3 text-sm font-medium text-snow">Price breakdown</p>
+                <PriceBreakdown lines={appointment.breakdown} />
+              </div>
+            ) : null}
             <p className="mt-2 text-xs capitalize text-mist">
               Status: {appointment.payment_status.replace("_", " ")}
             </p>

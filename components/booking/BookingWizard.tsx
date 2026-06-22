@@ -24,6 +24,7 @@ import { CUSTOM_QUOTE_SERVICE, TINT_TYPES } from "@/lib/booking/defaults";
 import { resolveServiceFormKind } from "@/lib/booking/service-form";
 import { formatDateLabel } from "@/lib/booking/availability";
 import { BookingCalendar } from "@/components/booking/BookingCalendar";
+import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { VehicleFields } from "@/components/booking/VehicleFields";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -111,10 +112,11 @@ export function BookingWizard({
     if (!service || service === "custom-quote" || step !== 4) return;
     getBookingPriceEstimate({
       serviceSlug: service,
+      serviceTitle: selectedService?.title,
       tintType,
       windowCount,
     }).then(setPricing);
-  }, [service, tintType, windowCount, step]);
+  }, [service, tintType, windowCount, step, selectedService?.title]);
 
   const canNext =
     (step === 0 && !!service) ||
@@ -381,12 +383,7 @@ export function BookingWizard({
                 <Badge tone="gold">{pricing?.formatted.total ?? selectedService?.from ?? "—"}</Badge>
               </div>
               {pricing && (
-                <dl className="mt-4 space-y-3 text-sm">
-                  <div className="flex justify-between"><dt className="text-mist">Subtotal</dt><dd className="text-snow">{pricing.formatted.subtotal}</dd></div>
-                  <div className="flex justify-between"><dt className="text-mist">Tax</dt><dd className="text-snow">{pricing.formatted.tax}</dd></div>
-                  <div className="flex justify-between border-t border-line pt-3 text-base font-semibold"><dt className="text-white">Total</dt><dd className="text-white">{pricing.formatted.total}</dd></div>
-                  <div className="flex justify-between text-gold"><dt>Deposit ({pricing.payment.depositPercent}%)</dt><dd>{pricing.formatted.deposit}</dd></div>
-                </dl>
+                <PriceBreakdown lines={pricing.breakdown} className="mt-4" />
               )}
             </div>
 

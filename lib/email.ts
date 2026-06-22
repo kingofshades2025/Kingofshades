@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { EMAIL_FUNCTION_SECRET } from "@/lib/app-config";
+import { formatBreakdownAmount, type PriceBreakdownLine } from "@/lib/booking/pricing";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/public-config";
 
 let resend: Resend | null = null;
@@ -208,6 +209,12 @@ export function bookingNotificationHtml(data: {
   );
 }
 
+export function priceBreakdownEmailRows(lines: PriceBreakdownLine[]): string {
+  return lines
+    .map((line) => row(line.label, formatBreakdownAmount(line)))
+    .join("");
+}
+
 export function bookingConfirmationHtml(data: {
   name: string;
   service: string;
@@ -216,8 +223,15 @@ export function bookingConfirmationHtml(data: {
   appointmentNumber?: string;
   addressLine1?: string | null;
   addressLine2?: string | null;
+  priceBreakdown?: PriceBreakdownLine[];
 }) {
   const first = data.name.split(" ")[0];
+  const pricingBlock = data.priceBreakdown?.length
+    ? `<p style="color:#555;font-size:15px;line-height:1.6;margin:20px 0 8px;font-weight:600;">Price estimate</p>
+       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+         ${priceBreakdownEmailRows(data.priceBreakdown)}
+       </table>`
+    : "";
   return emailLayout(
     `Booking confirmed, ${first}!`,
     `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
@@ -230,6 +244,7 @@ export function bookingConfirmationHtml(data: {
        ${row("Time", data.time)}
        ${shopLocationRow(data.addressLine1, data.addressLine2)}
      </table>
+     ${pricingBlock}
      <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
        We'll send a reminder before your appointment. Questions? Reply to this email or call the shop.
      </p>`,

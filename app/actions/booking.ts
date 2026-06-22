@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getAvailableTimeSlots } from "@/app/actions/availability";
 import { createAppointmentCheckout } from "@/app/actions/payments";
-import { generateAppointmentNumber, estimatePrice } from "@/lib/booking/pricing";
+import { generateAppointmentNumber, buildPriceBreakdown, type PriceBreakdownLine } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getBusinessAddressLines } from "@/lib/site-config";
@@ -146,6 +146,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
   let appointmentId: string | undefined;
   let appointmentNumber: string | undefined;
   let paymentMode: "none" | "deposit" | "full" = "none";
+  let priceBreakdownLines: PriceBreakdownLine[] | undefined;
 
   try {
     if (isSupabaseConfigured()) {
@@ -171,12 +172,15 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
         basePriceCents = svc?.price_cents ?? null;
       }
 
-      const pricing = estimatePrice({
+      const pricingBreakdown = buildPriceBreakdown({
         basePriceCents,
         tintType: payload.tintType ?? payload.tint,
         windowCount: payload.windowCount,
         paymentSettings: payment,
+        serviceTitle: service,
       });
+      const pricing = pricingBreakdown.estimate;
+      priceBreakdownLines = pricingBreakdown.lines;
 
       appointmentNumber = generateAppointmentNumber();
 
@@ -246,6 +250,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           appointmentNumber,
           addressLine1: businessAddress.line1,
           addressLine2: businessAddress.line2,
+          priceBreakdown: priceBreakdownLines,
         }),
       });
     } catch (emailErr) {

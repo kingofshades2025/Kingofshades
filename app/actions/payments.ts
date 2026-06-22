@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { isStripeConfigured, getStripe } from "@/lib/stripe";
-import { estimatePrice, formatMoney } from "@/lib/booking/pricing";
+import { buildPriceBreakdown, formatBreakdownAmount, formatMoney, type PriceBreakdownLine } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getSiteBaseUrl } from "@/lib/app-url";
@@ -30,7 +30,7 @@ export async function createAppointmentCheckout(opts: {
     const admin = createAdminClient();
     const { data: appointment, error } = await admin
       .from("appointments")
-      .select("*")
+      .select("*, services(price_cents)")
       .eq("id", opts.appointmentId)
       .maybeSingle();
 
@@ -54,6 +54,26 @@ export async function createAppointmentCheckout(opts: {
     const baseUrl = getSiteBaseUrl();
     const stripe = getStripe();
 
+    const details = (appointment.details ?? {}) as Record<string, string>;
+    const windowCount = Number(details["Number of windows"] || 0) || undefined;
+    const tintType = details["Tint type"];
+    const serviceJoin = appointment.services as { price_cents: number | null } | { price_cents: number | null }[] | null;
+    const basePriceCents = Array.isArray(serviceJoin)
+      ? (serviceJoin[0]?.price_cents ?? null)
+      : (serviceJoin?.price_cents ?? null);
+    const pricingBreakdown = buildPriceBreakdown({
+      basePriceCents,
+      tintType,
+      windowCount,
+      paymentSettings: payment,
+      serviceTitle: appointment.service_title,
+      showDeposit: false,
+    });
+    const summaryLines = pricingBreakdown.lines
+      .filter((line) => !["deposit", "balance"].includes(line.id))
+      .map((line) => `${line.label}: ${formatBreakdownAmount(line)}`)
+      .join(" · ");
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: appointment.customer_email,
@@ -68,7 +88,7 @@ export async function createAppointmentCheckout(opts: {
                 opts.paymentType === "deposit"
                   ? `Deposit — ${appointment.service_title}`
                   : `Payment — ${appointment.service_title}`,
-              description: `${appointment.appointment_number ?? "Appointment"} · ${appointment.appointment_date} ${appointment.appointment_time}`,
+              description: `${appointment.appointment_number ?? "Appointment"} · ${appointment.appointment_date} ${appointment.appointment_time}. ${summaryLines}`,
             },
           },
         },
@@ -76,6 +96,10 @@ export async function createAppointmentCheckout(opts: {
       metadata: {
         appointmentId: appointment.id,
         paymentType: opts.paymentType,
+        subtotalCents: String(pricingBreakdown.estimate.subtotalCents),
+        taxCents: String(pricingBreakdown.estimate.taxCents),
+        totalCents: String(pricingBreakdown.estimate.totalCents),
+        depositCents: String(pricingBreakdown.estimate.depositCents),
       },
       success_url: `${baseUrl}/booking/confirmation?id=${appointment.id}&paid=1`,
       cancel_url: `${baseUrl}/booking?cancelled=1`,
@@ -182,6 +206,7 @@ export async function createQuoteCheckout(opts: { quoteId: string }): Promise<Ch
 
 export async function getBookingPriceEstimate(opts: {
   serviceSlug: string;
+  serviceTitle?: string;
   tintType?: string;
   windowCount?: number;
 }) {
@@ -189,30 +214,37 @@ export async function getBookingPriceEstimate(opts: {
   const { payment } = getOperationalSettings(settings);
 
   let basePriceCents: number | null = null;
+  let serviceTitle = opts.serviceTitle;
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("services")
-      .select("price_cents")
+      .select("price_cents, title")
       .eq("slug", opts.serviceSlug)
       .maybeSingle();
     basePriceCents = data?.price_cents ?? null;
+    serviceTitle = serviceTitle ?? data?.title ?? undefined;
   }
 
-  const estimate = estimatePrice({
+  const breakdown = buildPriceBreakdown({
     basePriceCents,
     tintType: opts.tintType,
     windowCount: opts.windowCount,
     paymentSettings: payment,
+    serviceTitle,
   });
+  const estimate = breakdown.estimate;
 
   return {
     ...estimate,
+    breakdown: breakdown.lines,
     formatted: {
+      base: formatMoney(estimate.baseCents),
       subtotal: formatMoney(estimate.subtotalCents),
       tax: formatMoney(estimate.taxCents),
       total: formatMoney(estimate.totalCents),
       deposit: formatMoney(estimate.depositCents),
+      balance: formatMoney(estimate.totalCents - estimate.depositCents),
     },
     stripeEnabled: isStripeConfigured() && (payment.acceptDeposits || payment.acceptFullPayment),
     payment,
