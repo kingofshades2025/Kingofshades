@@ -194,6 +194,28 @@ export function SettingsManager({
 
 
 
+        <h3 className="sm:col-span-2 mt-4 font-display text-lg font-semibold text-white">Appointment workflow</h3>
+
+        <p className="sm:col-span-2 text-sm text-mist">
+          Default appointment duration uses <strong className="text-snow">Slot duration</strong> above ({ops.booking.slotDurationMinutes} min).
+        </p>
+
+        <SettingCheckbox
+          name="require_quote_before_confirm"
+          label="Require quote before confirm"
+          defaultChecked={ops.appointment.requireQuoteBeforeConfirm}
+          description="Admin must send a quote before manually confirming an appointment."
+        />
+
+        <SettingCheckbox
+          name="auto_confirm_on_deposit_paid"
+          label="Auto-confirm on deposit paid"
+          defaultChecked={ops.appointment.autoConfirmOnDepositPaid}
+          description="Stripe webhook sets status to confirmed when deposit or full payment succeeds."
+        />
+
+
+
         <h3 className="sm:col-span-2 mt-4 font-display text-lg font-semibold text-white">Payment settings</h3>
 
         <Field label="Deposit %"><Input name="deposit_percent" type="number" step="0.1" defaultValue={ops.payment.depositPercent} /></Field>

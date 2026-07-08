@@ -61,6 +61,13 @@ export type NotificationSettings = {
   smsEnabled: boolean;
 };
 
+export type AppointmentWorkflowSettings = {
+  /** Block confirming until a quote has been sent to the client. */
+  requireQuoteBeforeConfirm: boolean;
+  /** Auto-set status to confirmed when Stripe deposit/full payment succeeds. */
+  autoConfirmOnDepositPaid: boolean;
+};
+
 export type GalleryCategory =
   | "Cars"
   | "Trucks"
@@ -226,6 +233,7 @@ export type SiteSettings = {
   booking_settings?: BookingSettings;
   payment_settings?: PaymentSettings;
   notification_settings?: NotificationSettings;
+  appointment_settings?: AppointmentWorkflowSettings;
   updated_at: string;
 };
 

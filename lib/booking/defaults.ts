@@ -1,4 +1,5 @@
 import type {
+  AppointmentWorkflowSettings,
   BookingSettings,
   NotificationSettings,
   PaymentSettings,
@@ -35,6 +36,11 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   reminder24hEnabled: true,
   reminder2hEnabled: true,
   smsEnabled: false,
+};
+
+export const DEFAULT_APPOINTMENT_WORKFLOW_SETTINGS: AppointmentWorkflowSettings = {
+  requireQuoteBeforeConfirm: true,
+  autoConfirmOnDepositPaid: true,
 };
 
 export const TINT_TYPES = [

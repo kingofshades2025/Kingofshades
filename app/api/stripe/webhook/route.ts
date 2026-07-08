@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeWebhookSecret, isStripeConfigured } from "@/lib/stripe";
+import { getSiteSettings } from "@/lib/queries/public";
+import { getOperationalSettings } from "@/lib/booking/settings";
 import type Stripe from "stripe";
 
 export async function POST(request: Request) {
@@ -106,13 +108,20 @@ export async function POST(request: Request) {
           paymentStatus = "deposit_paid";
         }
 
+        const siteSettings = await getSiteSettings();
+        const { appointment: workflow } = getOperationalSettings(siteSettings);
+
+        const updatePayload: Record<string, unknown> = {
+          amount_paid_cents: newPaid,
+          payment_status: paymentStatus,
+        };
+        if (workflow.autoConfirmOnDepositPaid) {
+          updatePayload.status = "confirmed";
+        }
+
         await admin
           .from("appointments")
-          .update({
-            amount_paid_cents: newPaid,
-            payment_status: paymentStatus,
-            status: "confirmed",
-          })
+          .update(updatePayload)
           .eq("id", appointmentId);
       } catch (err) {
         console.error("[stripe webhook update]", err);

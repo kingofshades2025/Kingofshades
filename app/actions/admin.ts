@@ -12,6 +12,8 @@ import { formatMoney } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
 import { createAppointmentCheckout, createQuoteCheckout } from "@/app/actions/payments";
 import { generateQuotePdf } from "@/lib/quotes/generate-quote-pdf";
+import { getAvailableTimeSlots } from "@/app/actions/availability";
+import { generateAppointmentNumber } from "@/lib/booking/pricing";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -162,12 +164,27 @@ export async function updateAppointmentStatus(
 
     const { data: existing } = await supabase
       .from("appointments")
-      .select("customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status, review_submitted_at")
+      .select(
+        "customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status, review_submitted_at, quote_sent_at, quote_pdf_url",
+      )
       .eq("id", id)
       .maybeSingle();
 
+    if (!existing) return { success: false, error: "Appointment not found." };
+
+    if (status === "confirmed" && existing.status !== "confirmed") {
+      const siteSettings = await getSiteSettings();
+      const { appointment: workflow } = getOperationalSettings(siteSettings);
+      if (workflow.requireQuoteBeforeConfirm && !existing.quote_sent_at && !existing.quote_pdf_url) {
+        return {
+          success: false,
+          error: "Send a quote to the client before confirming this appointment.",
+        };
+      }
+    }
+
     const transitioningToCompleted =
-      existing && status === "completed" && existing.status !== "completed";
+      status === "completed" && existing.status !== "completed";
     const reviewToken =
       transitioningToCompleted && !existing.review_submitted_at
         ? crypto.randomUUID()
@@ -234,6 +251,310 @@ export async function updateAppointmentStatus(
   } catch (err) {
     logActionError("updateAppointmentStatus", err);
     return { success: false, error: "Could not update appointment." };
+  }
+}
+
+const CONFIRMED_SLOT_STATUSES: AppointmentStatus[] = ["confirmed", "in_progress"];
+
+async function checkConfirmedSlotConflict(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
+  dateIso: string,
+  time: string,
+  excludeAppointmentId?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let query = supabase
+    .from("appointments")
+    .select("id")
+    .eq("appointment_date", dateIso)
+    .eq("appointment_time", time)
+    .in("status", CONFIRMED_SLOT_STATUSES);
+
+  if (excludeAppointmentId) {
+    query = query.neq("id", excludeAppointmentId);
+  }
+
+  const { data, error } = await query;
+  if (error) return { ok: false, error: error.message };
+  if (data && data.length > 0) {
+    return { ok: false, error: "That time slot is already booked (confirmed appointment)." };
+  }
+  return { ok: true };
+}
+
+function parseAppointmentDetails(formData: FormData, existing?: Record<string, string | string[]>) {
+  const details: Record<string, string | string[]> = { ...(existing ?? {}) };
+  const detailKeys = [
+    "Year",
+    "Vehicle make",
+    "Vehicle model",
+    "Tint percentage",
+    "Tint type",
+    "Project type",
+    "Window count",
+  ];
+  for (const key of detailKeys) {
+    const value = (formData.get(`detail_${key}`) as string | null)?.trim();
+    if (value !== null && value !== undefined) {
+      if (value) details[key] = value;
+      else delete details[key];
+    }
+  }
+  if (existing?.photo_urls) {
+    details.photo_urls = existing.photo_urls;
+  }
+  return details;
+}
+
+export async function updateAppointment(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const id = (formData.get("id") as string)?.trim();
+    if (!isUuid(id)) return { success: false, error: "Invalid appointment." };
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from("appointments")
+      .select("details, status")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchErr || !existing) return { success: false, error: "Appointment not found." };
+
+    const customerName = (formData.get("customer_name") as string)?.trim();
+    const customerEmail = (formData.get("customer_email") as string)?.trim();
+    if (!customerName || !customerEmail) {
+      return { success: false, error: "Customer name and email are required." };
+    }
+
+    const durationRaw = (formData.get("duration_minutes") as string)?.trim();
+    const durationMinutes = durationRaw ? Number(durationRaw) : undefined;
+
+    const details = parseAppointmentDetails(
+      formData,
+      existing.details as Record<string, string | string[]>,
+    );
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: (formData.get("customer_phone") as string)?.trim() || null,
+        customer_address: (formData.get("customer_address") as string)?.trim() || null,
+        service_title: (formData.get("service_title") as string)?.trim() || undefined,
+        notes: (formData.get("notes") as string)?.trim() || null,
+        internal_notes: (formData.get("internal_notes") as string)?.trim() || null,
+        ...(durationMinutes && durationMinutes > 0 ? { duration_minutes: durationMinutes } : {}),
+        details,
+      })
+      .eq("id", id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    return { success: true };
+  } catch (err) {
+    logActionError("updateAppointment", err);
+    return { success: false, error: "Could not update appointment." };
+  }
+}
+
+export async function rescheduleAppointment(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const id = (formData.get("id") as string)?.trim();
+    const dateIso = (formData.get("appointment_date") as string)?.trim();
+    const time = (formData.get("appointment_time") as string)?.trim();
+
+    if (!isUuid(id)) return { success: false, error: "Invalid appointment." };
+    if (!dateIso || !/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) {
+      return { success: false, error: "Valid date is required." };
+    }
+    if (!time) return { success: false, error: "Time is required." };
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from("appointments")
+      .select("status, appointment_date, appointment_time")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchErr || !existing) return { success: false, error: "Appointment not found." };
+
+    const conflict = await checkConfirmedSlotConflict(supabase, dateIso, time, id);
+    if (!conflict.ok) return { success: false, error: conflict.error };
+
+    if (CONFIRMED_SLOT_STATUSES.includes(existing.status as AppointmentStatus)) {
+      const availability = await getAvailableTimeSlots(dateIso);
+      if (availability.closed) {
+        return { success: false, error: "That date is not available for booking." };
+      }
+      const isSameSlot =
+        existing.appointment_date === dateIso && existing.appointment_time === time;
+      if (!isSameSlot && !availability.slots.includes(time)) {
+        return {
+          success: false,
+          error: availability.error ?? "That time slot is not available.",
+        };
+      }
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ appointment_date: dateIso, appointment_time: time })
+      .eq("id", id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    return { success: true };
+  } catch (err) {
+    logActionError("rescheduleAppointment", err);
+    return { success: false, error: "Could not reschedule appointment." };
+  }
+}
+
+export async function cancelAppointment(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const id = (formData.get("id") as string)?.trim();
+    const reason = (formData.get("cancellation_reason") as string)?.trim();
+
+    if (!isUuid(id)) return { success: false, error: "Invalid appointment." };
+
+    const { data: existing } = await supabase
+      .from("appointments")
+      .select("internal_notes, status")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!existing) return { success: false, error: "Appointment not found." };
+    if (existing.status === "cancelled") {
+      return { success: false, error: "Appointment is already cancelled." };
+    }
+
+    const cancelNote = reason
+      ? `[Cancelled ${new Date().toLocaleDateString()}] ${reason}`
+      : `[Cancelled ${new Date().toLocaleDateString()}]`;
+    const internalNotes = existing.internal_notes
+      ? `${existing.internal_notes}\n\n${cancelNote}`
+      : cancelNote;
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled", internal_notes: internalNotes })
+      .eq("id", id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err) {
+    logActionError("cancelAppointment", err);
+    return { success: false, error: "Could not cancel appointment." };
+  }
+}
+
+export async function createManualAppointment(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireAdmin();
+    const customerName = (formData.get("customer_name") as string)?.trim();
+    const customerEmail = (formData.get("customer_email") as string)?.trim();
+    const serviceTitle = (formData.get("service_title") as string)?.trim();
+    const dateIso = (formData.get("appointment_date") as string)?.trim();
+    const time = (formData.get("appointment_time") as string)?.trim();
+    const status = ((formData.get("status") as string)?.trim() || "requested") as AppointmentStatus;
+    const skipAvailability = formData.get("skip_availability") === "true";
+
+    if (!customerName || !customerEmail) {
+      return { success: false, error: "Customer name and email are required." };
+    }
+    if (!serviceTitle) return { success: false, error: "Service is required." };
+    if (!dateIso || !time) return { success: false, error: "Date and time are required." };
+
+    if (!skipAvailability) {
+      const conflict = await checkConfirmedSlotConflict(supabase, dateIso, time);
+      if (!conflict.ok) return { success: false, error: conflict.error };
+
+      if (status === "confirmed" || status === "in_progress") {
+        const availability = await getAvailableTimeSlots(dateIso);
+        if (availability.closed || !availability.slots.includes(time)) {
+          return {
+            success: false,
+            error: availability.error ?? "That time slot is not available.",
+          };
+        }
+      }
+    }
+
+    const siteSettings = await getSiteSettings();
+    const { booking } = getOperationalSettings(siteSettings);
+
+    const serviceId = (formData.get("service_id") as string)?.trim() || null;
+    const details = parseAppointmentDetails(formData);
+
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .ilike("email", customerEmail)
+      .maybeSingle();
+
+    let customerId = customer?.id ?? null;
+    if (!customerId) {
+      const { data: created } = await supabase
+        .from("customers")
+        .insert({
+          name: customerName,
+          email: customerEmail,
+          phone: (formData.get("customer_phone") as string)?.trim() || null,
+          address: (formData.get("customer_address") as string)?.trim() || null,
+        })
+        .select("id")
+        .single();
+      customerId = created?.id ?? null;
+    }
+
+    const durationRaw = (formData.get("duration_minutes") as string)?.trim();
+    const durationMinutes = durationRaw
+      ? Number(durationRaw)
+      : booking.slotDurationMinutes;
+
+    const { error } = await supabase.from("appointments").insert({
+      customer_id: customerId,
+      service_id: serviceId && isUuid(serviceId) ? serviceId : null,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: (formData.get("customer_phone") as string)?.trim() || null,
+      customer_address: (formData.get("customer_address") as string)?.trim() || null,
+      service_title: serviceTitle,
+      appointment_number: generateAppointmentNumber(),
+      appointment_date: dateIso,
+      appointment_time: time,
+      notes: (formData.get("notes") as string)?.trim() || null,
+      internal_notes: (formData.get("internal_notes") as string)?.trim() || null,
+      status,
+      payment_status: "unpaid",
+      amount_paid_cents: 0,
+      duration_minutes: durationMinutes,
+      details,
+    });
+
+    if (error) {
+      if (error.code === "23505") {
+        return { success: false, error: "That time slot conflicts with another booking." };
+      }
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err) {
+    logActionError("createManualAppointment", err);
+    return { success: false, error: "Could not create appointment." };
   }
 }
 
@@ -472,6 +793,10 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
         reminder24hEnabled: formData.get("reminder_24h_enabled") === "true",
         reminder2hEnabled: formData.get("reminder_2h_enabled") === "true",
         smsEnabled: formData.get("sms_enabled") === "true",
+      },
+      appointment_settings: {
+        requireQuoteBeforeConfirm: formData.get("require_quote_before_confirm") === "true",
+        autoConfirmOnDepositPaid: formData.get("auto_confirm_on_deposit_paid") === "true",
       },
     };
 
