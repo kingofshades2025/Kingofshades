@@ -25,11 +25,13 @@ insert into storage.buckets (id, name, public)
 values ('quotes', 'quotes', true)
 on conflict (id) do nothing;
 
+drop policy if exists "Public read quote PDFs" on storage.objects;
 create policy "Public read quote PDFs"
   on storage.objects for select
   to anon, authenticated
   using (bucket_id = 'quotes');
 
+drop policy if exists "Admins manage quote PDFs" on storage.objects;
 create policy "Admins manage quote PDFs"
   on storage.objects for all
   to authenticated
