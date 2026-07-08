@@ -58,6 +58,7 @@ export async function sendEmail(opts: {
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: { filename: string; content: Buffer | Uint8Array }[];
 }) {
   if (process.env.RESEND_API_KEY?.trim()) {
     const { data, error } = await getResend().emails.send({
@@ -66,6 +67,10 @@ export async function sendEmail(opts: {
       subject: opts.subject,
       html: opts.html,
       replyTo: opts.replyTo,
+      attachments: opts.attachments?.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content).toString("base64"),
+      })),
     });
 
     if (error) {
@@ -73,6 +78,10 @@ export async function sendEmail(opts: {
     }
 
     return data;
+  }
+
+  if (opts.attachments?.length) {
+    throw new Error("Email attachments require RESEND_API_KEY.");
   }
 
   return sendViaEdgeFunction(opts);
@@ -213,6 +222,89 @@ export function priceBreakdownEmailRows(lines: PriceBreakdownLine[]): string {
   return lines
     .map((line) => row(line.label, formatBreakdownAmount(line)))
     .join("");
+}
+
+export function bookingRequestReceivedHtml(data: {
+  name: string;
+  service: string;
+  date: string;
+  time: string;
+  appointmentNumber?: string;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+}) {
+  const first = data.name.split(" ")[0];
+  return emailLayout(
+    `Request received, ${first}!`,
+    `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+       Thank you for choosing King of Shades. We received your booking request and our team will review your vehicle and the work needed before sending a formal quote.
+     </p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+       ${row("Request #", data.appointmentNumber ?? "Pending")}
+       ${row("Service", data.service)}
+       ${row("Preferred date", data.date)}
+       ${row("Preferred time", data.time)}
+       ${shopLocationRow(data.addressLine1, data.addressLine2)}
+     </table>
+     <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
+       Your appointment is <strong>not confirmed yet</strong>. We'll email you a detailed quote with pricing once we've reviewed your request. Questions? Reply to this email or call the shop.
+     </p>`,
+  );
+}
+
+export function appointmentQuoteSentHtml(data: {
+  name: string;
+  service: string;
+  date: string;
+  time: string;
+  appointmentNumber?: string;
+  quotedAmount: string;
+  notes?: string;
+  pdfUrl?: string;
+  paymentUrl?: string;
+  priceBreakdown?: PriceBreakdownLine[];
+}) {
+  const first = data.name.split(" ")[0];
+  const pricingBlock = data.priceBreakdown?.length
+    ? `<p style="color:#555;font-size:15px;line-height:1.6;margin:20px 0 8px;font-weight:600;">Quote breakdown</p>
+       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+         ${priceBreakdownEmailRows(data.priceBreakdown)}
+       </table>`
+    : "";
+  const pdfBlock = data.pdfUrl
+    ? `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+         <a href="${data.pdfUrl}" style="color:#d4af37;font-weight:600;">Download your quote PDF</a>
+       </p>`
+    : "";
+  const paymentBlock = data.paymentUrl
+    ? `${emailButton("Approve & pay deposit", data.paymentUrl)}
+       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+         Secure checkout — pay your deposit to approve this quote and lock in your appointment.
+       </p>`
+    : `<p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
+         Reply to this email or call us to approve the quote and confirm your appointment.
+       </p>`;
+  const notesBlock = data.notes?.trim()
+    ? `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;padding:12px;background:#fafafa;border-radius:6px;">${data.notes.replace(/\n/g, "<br>")}</p>`
+    : "";
+
+  return emailLayout(
+    `Your quote is ready, ${first}`,
+    `<p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+       We've reviewed your request and prepared a quote for your King of Shades service.
+     </p>
+     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:6px;margin-bottom:20px;">
+       ${row("Quote #", data.appointmentNumber ?? "—")}
+       ${row("Service", data.service)}
+       ${row("Preferred date", data.date)}
+       ${row("Preferred time", data.time)}
+       ${row("Quoted total", data.quotedAmount)}
+     </table>
+     ${pricingBlock}
+     ${notesBlock}
+     ${pdfBlock}
+     ${paymentBlock}`,
+  );
 }
 
 export function bookingConfirmationHtml(data: {

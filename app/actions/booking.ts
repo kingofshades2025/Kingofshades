@@ -3,7 +3,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getAvailableTimeSlots } from "@/app/actions/availability";
-import { createAppointmentCheckout } from "@/app/actions/payments";
 import { generateAppointmentNumber, buildPriceBreakdown, type PriceBreakdownLine } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
 import { getSiteSettings } from "@/lib/queries/public";
@@ -12,8 +11,9 @@ import {
   sendEmail,
   getEmailTo,
   bookingNotificationHtml,
-  bookingConfirmationHtml,
+  bookingRequestReceivedHtml,
 } from "@/lib/email";
+import type { QuoteLineItem } from "@/lib/types/database";
 
 export type BookingPayload = {
   service: string;
@@ -44,19 +44,13 @@ export type BookingResult =
     }
   | { success: false; error: string };
 
+function breakdownToQuoteItems(lines: PriceBreakdownLine[]): QuoteLineItem[] {
+  return lines.map((line) => ({ label: line.label, amount_cents: line.amountCents }));
+}
+
 function parseAppointmentDate(dateIso: string): string | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) return dateIso;
   return null;
-}
-
-function resolvePaymentMode(
-  mode: BookingPayload["paymentMode"],
-  payment: ReturnType<typeof getOperationalSettings>["payment"],
-): "none" | "deposit" | "full" {
-  if (!mode || mode === "none") return "none";
-  if (mode === "deposit" && payment.acceptDeposits) return "deposit";
-  if (mode === "full" && payment.acceptFullPayment) return "full";
-  return "none";
 }
 
 async function upsertBookingCustomer(
@@ -145,15 +139,12 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
   let savedToDb = false;
   let appointmentId: string | undefined;
   let appointmentNumber: string | undefined;
-  let paymentMode: "none" | "deposit" | "full" = "none";
-  let priceBreakdownLines: PriceBreakdownLine[] | undefined;
 
   try {
     if (isSupabaseConfigured()) {
       const admin = createAdminClient();
       const settings = await getSiteSettings();
       const { booking, payment } = getOperationalSettings(settings);
-      paymentMode = resolvePaymentMode(payload.paymentMode, payment);
 
       const { customerId, error: customerError } = await upsertBookingCustomer(admin, payload);
       if (customerError) {
@@ -180,7 +171,6 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
         serviceTitle: service,
       });
       const pricing = pricingBreakdown.estimate;
-      priceBreakdownLines = pricingBreakdown.lines;
 
       appointmentNumber = generateAppointmentNumber();
 
@@ -205,12 +195,13 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           appointment_date: appointmentDate,
           appointment_time: time,
           notes: payload.notes.trim() || null,
-          status: "pending",
+          status: "requested",
           payment_status: "unpaid",
           total_cents: pricing.totalCents,
           deposit_cents: pricing.depositCents,
           amount_paid_cents: 0,
           duration_minutes: booking.slotDurationMinutes,
+          estimate_line_items: breakdownToQuoteItems(pricingBreakdown.lines),
           details,
         })
         .select("id")
@@ -221,7 +212,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           return { success: false, error: "That time slot was just booked. Please choose another." };
         }
         console.error("[booking] db insert", error.message);
-        return { success: false, error: "Could not save your booking. Please try again or call us." };
+        return { success: false, error: "Could not save your request. Please try again or call us." };
       }
 
       appointmentId = created.id;
@@ -241,8 +232,8 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
 
       await sendEmail({
         to: email,
-        subject: `Booking confirmed — ${appointmentNumber ?? "King of Shades"}`,
-        html: bookingConfirmationHtml({
+        subject: `Booking request received — ${appointmentNumber ?? "King of Shades"}`,
+        html: bookingRequestReceivedHtml({
           name,
           service,
           date,
@@ -250,7 +241,6 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           appointmentNumber,
           addressLine1: businessAddress.line1,
           addressLine2: businessAddress.line2,
-          priceBreakdown: priceBreakdownLines,
         }),
       });
     } catch (emailErr) {
@@ -261,31 +251,10 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
           appointmentId,
           appointmentNumber,
           warning:
-            "Booking saved — we'll confirm by email soon. (Confirmation email could not be sent.)",
+            "Request saved — we'll follow up by email soon. (Confirmation email could not be sent.)",
         };
       }
       throw emailErr;
-    }
-
-    if (savedToDb && appointmentId && paymentMode !== "none") {
-      const checkout = await createAppointmentCheckout({
-        appointmentId,
-        paymentType: paymentMode,
-      });
-      if (checkout.success) {
-        return {
-          success: true,
-          appointmentId,
-          appointmentNumber,
-          checkoutUrl: checkout.url,
-        };
-      }
-      return {
-        success: true,
-        appointmentId,
-        appointmentNumber,
-        warning: `Booking saved, but payment could not start: ${checkout.error}`,
-      };
     }
 
     return { success: true, appointmentId, appointmentNumber };
@@ -293,7 +262,7 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
     console.error("[booking]", err);
     return {
       success: false,
-      error: "Could not submit your booking. Please try again or contact us directly.",
+      error: "Could not submit your request. Please try again or contact us directly.",
     };
   }
 }

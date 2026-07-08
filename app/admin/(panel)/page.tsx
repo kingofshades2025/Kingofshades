@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
     try {
       [stats, upcoming] = await Promise.all([
         getDashboardStats(),
-        getAdminAppointments({ status: "pending" }),
+        getAdminAppointments({ status: "requested" }),
       ]);
     } catch {
       /* empty dashboard */
@@ -35,7 +35,7 @@ export default async function AdminDashboardPage() {
 
   const statCards = [
     { label: "Total Appointments", value: String(stats.totalAppointments), delta: "Live", icon: "calendar" as const },
-    { label: "Upcoming", value: String(stats.upcomingAppointments), delta: "Pending + confirmed", icon: "clock" as const },
+    { label: "Upcoming", value: String(stats.upcomingAppointments), delta: "Requested + confirmed", icon: "clock" as const },
     { label: "Customers", value: String(stats.totalCustomers), delta: "All time", icon: "users" as const },
     { label: "Active Services", value: String(stats.activeServices), delta: "On website", icon: "tag" as const },
     { label: "Revenue", value: "—", delta: "Stripe coming in Phase 3", icon: "card" as const },

@@ -9,8 +9,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  Lock,
   CalendarDays,
   CheckCircle2,
   AlertCircle,
@@ -34,7 +32,7 @@ import { ClientFileUpload } from "@/components/ui/ClientFileUpload";
 
 const serviceIcons = { car: Car, home: Home, building: Building2, sticker: Sticker };
 
-const steps = ["Service", "Details", "Date & Time", "Your Info", "Payment"];
+const steps = ["Service", "Details", "Date & Time", "Your Info", "Review"];
 
 type BookingService = {
   id: string;
@@ -67,7 +65,6 @@ export function BookingWizard({
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMode, setPaymentMode] = useState<"none" | "deposit" | "full">("none");
   const [pricing, setPricing] = useState<Awaited<ReturnType<typeof getBookingPriceEstimate>> | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [appointmentNumber, setAppointmentNumber] = useState<string | null>(null);
@@ -150,15 +147,10 @@ export function BookingWizard({
         notes: notes.trim(),
         details,
         photoUrls: photoUrls.length ? photoUrls : undefined,
-        paymentMode: pricing?.stripeEnabled ? paymentMode : "none",
         windowCount,
       });
 
       if (result.success) {
-        if (result.checkoutUrl) {
-          window.location.href = result.checkoutUrl;
-          return;
-        }
         setAppointmentNumber(result.appointmentNumber ?? null);
         setSubmitted(true);
         setSubmitWarning(result.warning ?? null);
@@ -175,12 +167,12 @@ export function BookingWizard({
           <span className="grid h-16 w-16 place-items-center rounded-full bg-gold/15 text-gold">
             <CheckCircle2 className="h-8 w-8" />
           </span>
-          <h2 className="mt-6 font-display text-2xl font-bold text-white">Booking confirmed!</h2>
+          <h2 className="mt-6 font-display text-2xl font-bold text-white">Request submitted!</h2>
           {appointmentNumber && (
             <p className="mt-2 font-mono text-sm text-gold">#{appointmentNumber}</p>
           )}
           <p className="mt-3 max-w-md text-sm text-mist">
-            Confirmation sent to <span className="text-snow">{email}</span>.
+            We received your booking request at <span className="text-snow">{email}</span>. Our team will review your vehicle and the work needed, then email you a formal quote.
           </p>
           {submitWarning && (
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -189,14 +181,17 @@ export function BookingWizard({
             </div>
           )}
           <p className="mt-2 text-sm text-mist">
-            {selectedService?.title} · {formatDateLabel(dateIso!)} at {slot}
+            Preferred: {selectedService?.title} · {formatDateLabel(dateIso!)} at {slot}
+          </p>
+          <p className="mt-2 max-w-md text-xs text-mist">
+            Your appointment is not confirmed until you approve our quote.
           </p>
           <Button
             variant="outline"
             className="mt-8"
             onClick={() => window.location.reload()}
           >
-            Book another appointment
+            Submit another request
           </Button>
         </div>
       </div>
@@ -293,6 +288,12 @@ export function BookingWizard({
                   <Field label="Number of windows"><Input type="number" min={1} placeholder="e.g. 5" value={details["Number of windows"] ?? ""} onChange={(e) => setDetail("Number of windows", e.target.value)} /></Field>
                   <Field label="Tint percentage"><Select value={tint} onChange={(e) => setTint(e.target.value)}>{tintPercentages.map((t) => <option key={t}>{t}</option>)}</Select></Field>
                   <Field label="Tint type"><Select value={tintType} onChange={(e) => setTintType(e.target.value)}>{TINT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</Select></Field>
+                  <ClientFileUpload
+                    value={photoUrls}
+                    onChange={setPhotoUrls}
+                    className="sm:col-span-2"
+                    hint="Photos of your vehicle help us prepare an accurate quote — up to 5 files, 5 MB each"
+                  />
                 </>
               ) : formKind === "decals" ? (
                 <>
@@ -373,45 +374,28 @@ export function BookingWizard({
 
         {step === 4 && (
           <div>
-            <h2 className="font-display text-2xl font-bold text-white">Payment summary</h2>
+            <h2 className="font-display text-2xl font-bold text-white">Review your request</h2>
+            <p className="mt-1 text-sm text-mist">
+              Submit your preferred date and details. We&apos;ll verify everything and email you a quote.
+            </p>
             <div className="mt-6 rounded-2xl border border-line bg-charcoal-light p-5">
               <div className="flex items-center justify-between border-b border-line pb-4">
                 <div>
                   <p className="font-semibold text-white">{selectedService?.title}</p>
                   <p className="text-sm text-mist">{dateIso && formatDateLabel(dateIso)} · {slot}</p>
                 </div>
-                <Badge tone="gold">{pricing?.formatted.total ?? selectedService?.from ?? "—"}</Badge>
+                <Badge tone="gold">{pricing?.formatted.total ?? selectedService?.from ?? "Estimate"}</Badge>
               </div>
               {pricing && (
-                <PriceBreakdown lines={pricing.breakdown} className="mt-4" />
+                <>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-wider text-mist">Starting estimate</p>
+                  <PriceBreakdown lines={pricing.breakdown} className="mt-2" />
+                  <p className="mt-4 text-xs text-mist">
+                    Final pricing may change after we review your vehicle and confirm the work scope.
+                  </p>
+                </>
               )}
             </div>
-
-            {pricing?.stripeEnabled && (
-              <div className="mt-6 space-y-2">
-                <p className="text-sm font-medium text-snow">Payment option</p>
-                {(
-                  [
-                    { mode: "none" as const, label: "Pay later — confirm booking only", show: true },
-                    {
-                      mode: "deposit" as const,
-                      label: `Pay deposit now (${pricing.formatted.deposit})`,
-                      show: pricing.payment.acceptDeposits,
-                    },
-                    {
-                      mode: "full" as const,
-                      label: `Pay in full now (${pricing.formatted.total})`,
-                      show: pricing.payment.acceptFullPayment,
-                    },
-                  ].filter((o) => o.show)
-                ).map(({ mode, label }) => (
-                  <label key={mode} className={cn("flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3", paymentMode === mode ? "border-gold/50 bg-gold/10" : "border-line")}>
-                    <input type="radio" name="paymentMode" checked={paymentMode === mode} onChange={() => setPaymentMode(mode)} className="accent-gold" />
-                    <span className="text-sm text-snow">{label}</span>
-                  </label>
-                ))}
-              </div>
-            )}
 
             {error && (
               <div className="mt-6 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -421,15 +405,8 @@ export function BookingWizard({
             )}
 
             <Button size="lg" className="mt-6 w-full" type="button" disabled={isPending} onClick={handleConfirmBooking}>
-              <Lock className="h-4 w-4" />
-              {isPending ? "Submitting…" : paymentMode !== "none" && pricing?.stripeEnabled ? "Confirm & pay" : "Confirm booking"}
+              {isPending ? "Submitting…" : "Submit booking request"}
             </Button>
-            {!pricing?.stripeEnabled && (
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-mist">
-                <CreditCard className="h-3.5 w-3.5" />
-                Online payment coming soon — no charge today.
-              </p>
-            )}
           </div>
         )}
 

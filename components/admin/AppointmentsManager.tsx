@@ -4,15 +4,25 @@ import { useState, useTransition } from "react";
 import type { Appointment, AppointmentStatus } from "@/lib/types/database";
 import { updateAppointmentStatus } from "@/app/actions/admin";
 import { AdminPageHeader, AppointmentStatusBadge } from "@/components/admin/AdminUI";
+import { AppointmentQuotePanel } from "@/components/admin/AppointmentQuotePanel";
 import { photoUrlsFromDetails, UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
-const statuses: AppointmentStatus[] = ["pending", "confirmed", "in_progress", "completed", "cancelled"];
+const statuses: AppointmentStatus[] = [
+  "requested",
+  "quote_sent",
+  "confirmed",
+  "in_progress",
+  "completed",
+  "cancelled",
+];
 
 export function AppointmentsManager({ appointments }: { appointments: Appointment[] }) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const filtered = appointments.filter((a) => {
@@ -22,13 +32,17 @@ export function AppointmentsManager({ appointments }: { appointments: Appointmen
     return (
       a.customer_name.toLowerCase().includes(q) ||
       a.customer_email.toLowerCase().includes(q) ||
-      a.service_title.toLowerCase().includes(q)
+      a.service_title.toLowerCase().includes(q) ||
+      (a.appointment_number ?? "").toLowerCase().includes(q)
     );
   });
 
   return (
     <>
-      <AdminPageHeader title="Appointments" subtitle="View and manage booking requests." />
+      <AdminPageHeader
+        title="Appointments"
+        subtitle="Review booking requests, send quotes, and manage scheduled work."
+      />
 
       <div className="mb-6 flex flex-wrap gap-3">
         <Field className="min-w-48 flex-1">
@@ -38,82 +52,104 @@ export function AppointmentsManager({ appointments }: { appointments: Appointmen
           <Select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All statuses</option>
             {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s.replace("_", " ")}
+              </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-line bg-charcoal-light text-mist">
-            <tr>
-              <th className="px-4 py-3 font-medium">Customer</th>
-              <th className="px-4 py-3 font-medium">Service</th>
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {filtered.map((a) => (
-              <tr key={a.id} className="bg-surface/40">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-white">{a.customer_name}</p>
-                  <p className="text-xs text-mist">{a.customer_email}</p>
+      <div className="space-y-4">
+        {filtered.map((a) => {
+          const expanded = expandedId === a.id;
+          return (
+            <article key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface/40">
+              <div className="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-white">{a.customer_name}</p>
+                    <AppointmentStatusBadge status={a.status} />
+                    {a.quote_pdf_url && (
+                      <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-xs text-gold">
+                        PDF quote
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm text-mist">{a.customer_email}</p>
+                  {a.appointment_number && (
+                    <p className="mt-1 font-mono text-xs text-gold/80">#{a.appointment_number}</p>
+                  )}
+                  <p className="mt-2 text-sm text-snow">{a.service_title}</p>
+                  <p className="text-sm text-mist">
+                    {a.appointment_date} · {a.appointment_time}
+                  </p>
                   {photoUrlsFromDetails(a.details).length > 0 && (
-                    <div className="mt-2">
+                    <div className="mt-3">
                       <UploadedFilesGallery urls={photoUrlsFromDetails(a.details)} compact />
                     </div>
                   )}
-                </td>
-                <td className="px-4 py-3 text-mist">{a.service_title}</td>
-                <td className="px-4 py-3 text-mist">
-                  {a.appointment_date} · {a.appointment_time}
-                </td>
-                <td className="px-4 py-3">
-                  <AppointmentStatusBadge status={a.status} />
-                  {a.status === "completed" && (
-                    <div className="mt-1.5 space-y-0.5 text-xs text-mist">
-                      {a.review_email_sent_at && (
-                        <p className="text-gold/80">Review email sent</p>
-                      )}
-                      {a.review_submitted_at && (
-                        <p>Review submitted</p>
-                      )}
-                      {!a.review_email_sent_at && !a.review_submitted_at && (
-                        <p className="text-mist/70">Review pending</p>
-                      )}
-                    </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExpandedId(expanded ? null : a.id)}
+                >
+                  {expanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Close
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Manage
+                    </>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {statuses.map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={a.status === s ? "primary" : "subtle"}
-                        disabled={isPending || a.status === s}
-                        onClick={() =>
-                          startTransition(() => {
-                            void updateAppointmentStatus(a.id, s);
-                          })
-                        }
-                      >
-                        {s}
-                      </Button>
-                    ))}
+                </Button>
+              </div>
+
+              {expanded && (
+                <div className="border-t border-line p-4 sm:p-5">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <AppointmentQuotePanel appointment={a} />
+                    <div>
+                      <p className="mb-3 text-sm font-medium text-snow">Update status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {statuses.map((s) => (
+                          <Button
+                            key={s}
+                            size="sm"
+                            variant={a.status === s ? "primary" : "subtle"}
+                            disabled={isPending || a.status === s}
+                            onClick={() =>
+                              startTransition(() => {
+                                void updateAppointmentStatus(a.id, s);
+                              })
+                            }
+                          >
+                            {s.replace("_", " ")}
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="mt-4 text-xs text-mist">
+                        Confirm only after the client approves the quote — that locks the calendar slot.
+                      </p>
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!filtered.length && (
-          <p className="px-4 py-8 text-center text-sm text-mist">No appointments found.</p>
-        )}
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
+
+      {!filtered.length && (
+        <p className="rounded-2xl border border-line px-4 py-8 text-center text-sm text-mist">
+          No appointments found.
+        </p>
+      )}
     </>
   );
 }

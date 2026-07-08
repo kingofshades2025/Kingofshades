@@ -74,7 +74,8 @@ export function StatCard({
 }
 
 const appointmentStatusLabels: Record<DbAppointmentStatus, string> = {
-  pending: "Pending",
+  requested: "Requested",
+  quote_sent: "Quote sent",
   confirmed: "Confirmed",
   in_progress: "In progress",
   completed: "Completed",
@@ -86,13 +87,15 @@ export function AppointmentStatusBadge({ status }: { status: DbAppointmentStatus
   const tone =
     normalized === "confirmed"
       ? "green"
-      : normalized === "pending"
+      : normalized === "requested"
         ? "amber"
-        : normalized === "in_progress"
-          ? "blue"
-          : normalized === "completed"
+        : normalized === "quote_sent"
+          ? "gold"
+          : normalized === "in_progress"
             ? "blue"
-            : "red";
+            : normalized === "completed"
+              ? "blue"
+              : "red";
   return <Badge tone={tone}>{appointmentStatusLabels[normalized] ?? status}</Badge>;
 }
 

@@ -116,7 +116,7 @@ export async function getDashboardStats() {
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
-      .in("status", ["pending", "confirmed"])
+      .in("status", ["requested", "quote_sent", "confirmed"])
       .gte("appointment_date", new Date().toISOString().slice(0, 10)),
   ]);
 

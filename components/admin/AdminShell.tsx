@@ -249,7 +249,7 @@ export function AdminShell({
                           {pendingCount} upcoming appointment{pendingCount === 1 ? "" : "s"}
                         </span>
                         <span className="mt-0.5 block text-xs text-mist">
-                          View pending and confirmed bookings
+                          View requests and confirmed bookings
                         </span>
                       </span>
                     </Link>

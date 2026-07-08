@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AppointmentStatus, GalleryCategory, QuoteStatus } from "@/lib/types/database";
-import { sendEmail, appointmentConfirmedHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
+import type { AppointmentStatus, GalleryCategory, QuoteLineItem, QuoteStatus } from "@/lib/types/database";
+import { sendEmail, appointmentConfirmedHtml, appointmentQuoteSentHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
 import { getSiteBaseUrl } from "@/lib/app-url";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getBusinessAddressLines } from "@/lib/site-config";
 import { formatMoney } from "@/lib/booking/pricing";
-import { createQuoteCheckout } from "@/app/actions/payments";
+import { getOperationalSettings } from "@/lib/booking/settings";
+import { createAppointmentCheckout, createQuoteCheckout } from "@/app/actions/payments";
+import { generateQuotePdf } from "@/lib/quotes/generate-quote-pdf";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -652,6 +654,162 @@ export async function updateQuoteStatus(
   } catch (err) {
     logActionError("updateQuoteStatus", err);
     return { success: false, error: "Could not update quote." };
+  }
+}
+
+function parseQuoteLineItems(raw: unknown): QuoteLineItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is QuoteLineItem => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as QuoteLineItem).label === "string" &&
+        typeof (item as QuoteLineItem).amount_cents === "number"
+      );
+    })
+    .map((item) => ({
+      label: item.label,
+      amount_cents: item.amount_cents,
+    }));
+}
+
+function vehicleDetailsFromAppointment(details: Record<string, string | string[]> | null | undefined) {
+  const out: Record<string, string> = {};
+  if (!details) return out;
+  for (const [key, value] of Object.entries(details)) {
+    if (typeof value === "string" && value.trim()) out[key] = value;
+  }
+  return out;
+}
+
+export async function sendAppointmentQuote(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const appointmentId = (formData.get("appointment_id") as string)?.trim();
+    if (!isUuid(appointmentId)) return { success: false, error: "Invalid appointment." };
+
+    const quoteAmountRaw = (formData.get("quote_amount") as string)?.trim();
+    const quoteAmountCents = Math.round(Number.parseFloat(quoteAmountRaw || "0") * 100);
+    if (!quoteAmountCents || quoteAmountCents <= 0) {
+      return { success: false, error: "Enter a valid quote amount." };
+    }
+
+    const quoteNotes = (formData.get("quote_notes") as string)?.trim() || null;
+    const includePaymentLink = formData.get("include_payment_link") === "on";
+
+    const admin = createAdminClient();
+    const { data: appointment, error: fetchErr } = await admin
+      .from("appointments")
+      .select("*")
+      .eq("id", appointmentId)
+      .maybeSingle();
+
+    if (fetchErr || !appointment) {
+      return { success: false, error: "Appointment not found." };
+    }
+
+    const siteSettings = await getSiteSettings();
+    const { payment } = getOperationalSettings(siteSettings);
+    const businessAddress = getBusinessAddressLines(siteSettings);
+
+    const estimateItems = parseQuoteLineItems(appointment.estimate_line_items);
+    const quoteLineItems =
+      estimateItems.length > 0
+        ? estimateItems
+        : [{ label: appointment.service_title, amount_cents: quoteAmountCents }];
+
+    const pdfBytes = await generateQuotePdf({
+      appointmentNumber: appointment.appointment_number ?? appointment.id.slice(0, 8),
+      customerName: appointment.customer_name,
+      customerEmail: appointment.customer_email,
+      customerPhone: appointment.customer_phone,
+      serviceTitle: appointment.service_title,
+      appointmentDate: appointment.appointment_date,
+      appointmentTime: appointment.appointment_time,
+      vehicleDetails: vehicleDetailsFromAppointment(appointment.details),
+      lineItems: quoteLineItems,
+      totalCents: quoteAmountCents,
+      notes: quoteNotes,
+      businessName: siteSettings.business_name ?? "King of Shades",
+      addressLine1: businessAddress.line1,
+      addressLine2: businessAddress.line2,
+      phone: siteSettings.phone,
+      email: siteSettings.email,
+    });
+
+    const pdfPath = `quotes/${appointment.appointment_number ?? appointment.id}.pdf`;
+    const { error: uploadErr } = await admin.storage
+      .from("quotes")
+      .upload(pdfPath, pdfBytes, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+    if (uploadErr) {
+      console.error("[sendAppointmentQuote] upload", uploadErr.message);
+      return { success: false, error: "Could not save quote PDF." };
+    }
+
+    const { data: publicUrl } = admin.storage.from("quotes").getPublicUrl(pdfPath);
+    const depositCents = Math.round(quoteAmountCents * (payment.depositPercent / 100));
+
+    const { error: updateErr } = await admin
+      .from("appointments")
+      .update({
+        status: "quote_sent",
+        quote_amount_cents: quoteAmountCents,
+        quote_line_items: quoteLineItems,
+        quote_pdf_url: publicUrl.publicUrl,
+        quote_notes: quoteNotes,
+        quote_sent_at: new Date().toISOString(),
+        total_cents: quoteAmountCents,
+        deposit_cents: depositCents,
+      })
+      .eq("id", appointmentId);
+
+    if (updateErr) return { success: false, error: updateErr.message };
+
+    let paymentUrl: string | undefined;
+    if (includePaymentLink) {
+      const checkout = await createAppointmentCheckout({
+        appointmentId,
+        paymentType: "deposit",
+      });
+      if (checkout.success) paymentUrl = checkout.url;
+    }
+
+    const priceBreakdownForEmail = quoteLineItems.map((item, index) => ({
+      id: `line-${index}`,
+      label: item.label,
+      amountCents: item.amount_cents,
+    }));
+
+    await sendEmail({
+      to: appointment.customer_email,
+      subject: `Your quote from King of Shades — ${appointment.service_title}`,
+      html: appointmentQuoteSentHtml({
+        name: appointment.customer_name,
+        service: appointment.service_title,
+        date: appointment.appointment_date,
+        time: appointment.appointment_time,
+        appointmentNumber: appointment.appointment_number ?? undefined,
+        quotedAmount: formatMoney(quoteAmountCents),
+        notes: quoteNotes ?? undefined,
+        pdfUrl: publicUrl.publicUrl,
+        paymentUrl,
+        priceBreakdown: priceBreakdownForEmail,
+      }),
+      attachments: [{ filename: `quote-${appointment.appointment_number ?? "king-of-shades"}.pdf`, content: pdfBytes }],
+    });
+
+    revalidatePath("/admin/appointments");
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err) {
+    logActionError("sendAppointmentQuote", err);
+    return { success: false, error: "Could not send quote." };
   }
 }
 

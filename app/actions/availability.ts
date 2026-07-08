@@ -70,7 +70,7 @@ export async function getAvailableTimeSlots(dateIso: string): Promise<Availabili
       .from("appointments")
       .select("appointment_time", { count: "exact" })
       .eq("appointment_date", dateIso)
-      .not("status", "eq", "cancelled");
+      .in("status", ["confirmed", "in_progress", "completed"]);
 
     if (bookedErr) {
       console.error("[availability] appointments", bookedErr.message);

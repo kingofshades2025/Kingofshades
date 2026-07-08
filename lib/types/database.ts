@@ -1,11 +1,17 @@
 export type AdminRole = "admin" | "super_admin";
 
 export type AppointmentStatus =
-  | "pending"
+  | "requested"
+  | "quote_sent"
   | "confirmed"
   | "in_progress"
   | "completed"
   | "cancelled";
+
+export type QuoteLineItem = {
+  label: string;
+  amount_cents: number;
+};
 
 export type PaymentStatus = "unpaid" | "deposit_paid" | "paid" | "refunded";
 
@@ -135,6 +141,12 @@ export type Appointment = {
   review_submitted_at?: string | null;
   review_email_sent_at?: string | null;
   details: Record<string, string | string[]>;
+  estimate_line_items?: QuoteLineItem[];
+  quote_amount_cents?: number | null;
+  quote_line_items?: QuoteLineItem[];
+  quote_pdf_url?: string | null;
+  quote_notes?: string | null;
+  quote_sent_at?: string | null;
   created_at: string;
   updated_at: string;
   customers?: Customer | null;

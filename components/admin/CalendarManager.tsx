@@ -24,7 +24,8 @@ import { photoUrlsFromDetails, UploadedFilesGallery } from "@/components/ui/Clie
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const statusDot: Record<string, string> = {
-  pending: "bg-amber-400",
+  requested: "bg-amber-400",
+  quote_sent: "bg-gold",
   confirmed: "bg-emerald-400",
   in_progress: "bg-blue-400",
   completed: "bg-mist",
@@ -32,7 +33,8 @@ const statusDot: Record<string, string> = {
 };
 
 const statusCard: Record<string, string> = {
-  pending: "border-amber-500/40 bg-amber-500/10",
+  requested: "border-amber-500/40 bg-amber-500/10",
+  quote_sent: "border-gold/40 bg-gold/10",
   confirmed: "border-emerald-500/40 bg-emerald-500/10",
   in_progress: "border-blue-500/40 bg-blue-500/10",
   completed: "border-mist/30 bg-white/5",
@@ -211,11 +213,11 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                       }}
                       className={cn(
                         "flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight text-snow/90 transition-colors hover:ring-1 hover:ring-gold/40 sm:text-[11px]",
-                        statusCard[a.status] ?? statusCard.pending,
+                        statusCard[a.status] ?? statusCard.requested,
                       )}
                     >
                       <span
-                        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusDot[a.status] ?? statusDot.pending)}
+                        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusDot[a.status] ?? statusDot.requested)}
                       />
                       <span className="truncate">{a.appointment_time}</span>
                     </button>
@@ -276,7 +278,7 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                   onClick={() => setDetailAppt(a)}
                   className={cn(
                     "flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-gold/40",
-                    statusCard[a.status] ?? statusCard.pending,
+                    statusCard[a.status] ?? statusCard.requested,
                     detailAppt?.id === a.id && "border-gold/50 ring-1 ring-gold/30",
                   )}
                 >
@@ -416,6 +418,22 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                   <p className="mb-2 text-xs font-medium uppercase tracking-wider text-mist">Reference files</p>
                   <UploadedFilesGallery urls={photoUrlsFromDetails(detailAppt.details)} />
                 </div>
+              )}
+
+              {detailAppt.quote_pdf_url && (
+                <DetailRow icon={FileText} label="Quote PDF">
+                  <a
+                    href={detailAppt.quote_pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gold hover:underline"
+                  >
+                    View quote PDF
+                    {detailAppt.quote_amount_cents != null && (
+                      <> ({formatMoney(detailAppt.quote_amount_cents)})</>
+                    )}
+                  </a>
+                </DetailRow>
               )}
 
               <div className="flex gap-2 pt-2">
