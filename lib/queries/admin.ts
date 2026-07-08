@@ -3,7 +3,7 @@ import type { Appointment, Customer, Service, GalleryItem, Testimonial, SiteSett
 
 export async function getAdminServices() {
   const supabase = await createClient();
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("services")
     .select("*")
     .order("sort_order");
