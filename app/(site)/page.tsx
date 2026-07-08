@@ -71,7 +71,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 lg:pt-44">
+      <section className="relative overflow-hidden pt-28 pb-16 sm:pt-40 sm:pb-20 lg:pt-44">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -87,7 +87,7 @@ export default async function HomePage() {
                 <Sparkles className="h-3.5 w-3.5" />
                 {heroBadge}
               </Badge>
-              <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-5 font-display text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:mt-6 sm:text-5xl lg:text-6xl">
                 {heroTitle.includes(heroHighlight) ? (
                   <>
                     {heroTitle.split(heroHighlight)[0]}
@@ -98,21 +98,29 @@ export default async function HomePage() {
                   heroTitle
                 )}
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-mist">{heroSubtitle}</p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button href="/booking" size="lg">Book Appointment</Button>
-                <Button href="/contact" variant="outline" size="lg">Get a Quote</Button>
-                <Button href="/services" variant="ghost" size="lg">
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-mist sm:mt-6 sm:text-lg">
+                {heroSubtitle}
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button href="/booking" size="lg" className="w-full sm:w-auto">
+                  Book Appointment
+                </Button>
+                <Button href="/contact" variant="outline" size="lg" className="w-full sm:w-auto">
+                  Get a Quote
+                </Button>
+                <Button href="/services" variant="ghost" size="lg" className="w-full sm:w-auto">
                   View Services
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
 
-              <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+              <dl className="mt-10 grid max-w-lg grid-cols-2 gap-4 sm:mt-12 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-6">
                 {stats.map((s) => (
                   <div key={s.label}>
-                    <dt className="font-display text-2xl font-bold text-white">{s.value}</dt>
-                    <dd className="mt-1 text-xs uppercase tracking-wider text-mist">{s.label}</dd>
+                    <dt className="font-display text-xl font-bold text-white sm:text-2xl">{s.value}</dt>
+                    <dd className="mt-1 text-[0.65rem] uppercase tracking-wider text-mist sm:text-xs">
+                      {s.label}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -155,13 +163,18 @@ export default async function HomePage() {
       </section>
 
       <div className="border-y border-line bg-charcoal/60">
-        <Container className="grid grid-cols-2 divide-line py-6 sm:grid-cols-4 sm:divide-x">
+        <Container className="grid grid-cols-2 gap-y-4 py-5 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:py-6">
           {featureStrip.map(({ icon, label }) => {
             const Icon = stripIcons[icon as keyof typeof stripIcons] ?? ShieldCheck;
             return (
-              <div key={label} className="flex items-center justify-center gap-3 py-3 sm:py-0">
-                <Icon className="h-5 w-5 text-gold" />
-                <span className="text-sm font-medium text-snow/85">{label}</span>
+              <div
+                key={label}
+                className="flex items-center justify-center gap-2 px-2 py-1 sm:gap-3 sm:px-0 sm:py-0"
+              >
+                <Icon className="h-4 w-4 shrink-0 text-gold sm:h-5 sm:w-5" />
+                <span className="text-center text-xs font-medium leading-snug text-snow/85 sm:text-sm">
+                  {label}
+                </span>
               </div>
             );
           })}

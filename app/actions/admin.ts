@@ -10,7 +10,7 @@ import { getSiteSettings } from "@/lib/queries/public";
 import { getBusinessAddressLines } from "@/lib/site-config";
 import { formatMoney } from "@/lib/booking/pricing";
 import { getOperationalSettings } from "@/lib/booking/settings";
-import { createAppointmentCheckout, createQuoteCheckout } from "@/app/actions/payments";
+import { createQuoteCheckout } from "@/app/actions/payments";
 import { generateQuotePdf } from "@/lib/quotes/generate-quote-pdf";
 import { getAvailableTimeSlots } from "@/app/actions/availability";
 import { generateAppointmentNumber } from "@/lib/booking/pricing";
@@ -1021,7 +1021,6 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
     }
 
     const quoteNotes = (formData.get("quote_notes") as string)?.trim() || null;
-    const includePaymentLink = formData.get("include_payment_link") === "on";
 
     const admin = createAdminClient();
     const { data: appointment, error: fetchErr } = await admin
@@ -1078,6 +1077,7 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
 
     const { data: publicUrl } = admin.storage.from("quotes").getPublicUrl(pdfPath);
     const depositCents = Math.round(quoteAmountCents * (payment.depositPercent / 100));
+    const quoteConfirmToken = crypto.randomUUID();
 
     const { error: updateErr } = await admin
       .from("appointments")
@@ -1088,6 +1088,7 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
         quote_pdf_url: publicUrl.publicUrl,
         quote_notes: quoteNotes,
         quote_sent_at: new Date().toISOString(),
+        quote_confirm_token: quoteConfirmToken,
         total_cents: quoteAmountCents,
         deposit_cents: depositCents,
       })
@@ -1095,14 +1096,8 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
 
     if (updateErr) return { success: false, error: updateErr.message };
 
-    let paymentUrl: string | undefined;
-    if (includePaymentLink) {
-      const checkout = await createAppointmentCheckout({
-        appointmentId,
-        paymentType: "deposit",
-      });
-      if (checkout.success) paymentUrl = checkout.url;
-    }
+    const baseUrl = getSiteBaseUrl();
+    const confirmUrl = `${baseUrl}/quote/accept?token=${quoteConfirmToken}`;
 
     const priceBreakdownForEmail = quoteLineItems.map((item, index) => ({
       id: `line-${index}`,
@@ -1122,7 +1117,7 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
         quotedAmount: formatMoney(quoteAmountCents),
         notes: quoteNotes ?? undefined,
         pdfUrl: publicUrl.publicUrl,
-        paymentUrl,
+        confirmUrl,
         priceBreakdown: priceBreakdownForEmail,
       }),
       attachments: [{ filename: `quote-${appointment.appointment_number ?? "king-of-shades"}.pdf`, content: pdfBytes }],

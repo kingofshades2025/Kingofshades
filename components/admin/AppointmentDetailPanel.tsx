@@ -112,6 +112,16 @@ export function AppointmentDetailPanel({ appointment }: { appointment: Appointme
             {appointment.payment_status.replace("_", " ")}
           </span>
         )}
+        {appointment.payment_method && (
+          <span className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-xs capitalize text-gold">
+            {appointment.payment_method === "stripe" ? "Paid online" : "Pay at shop"}
+          </span>
+        )}
+        {appointment.quote_confirmed_at && (
+          <span className="text-xs text-mist">
+            Confirmed {new Date(appointment.quote_confirmed_at).toLocaleString()}
+          </span>
+        )}
         {appointment.total_cents != null && appointment.total_cents > 0 && (
           <span className="text-sm text-mist">Est. {formatMoney(appointment.total_cents)}</span>
         )}

@@ -17,7 +17,6 @@ function defaultQuoteAmount(appointment: Appointment) {
 export function AppointmentQuotePanel({ appointment }: { appointment: Appointment }) {
   const [quoteAmount, setQuoteAmount] = useState(() => defaultQuoteAmount(appointment));
   const [quoteNotes, setQuoteNotes] = useState(appointment.quote_notes ?? "");
-  const [includePaymentLink, setIncludePaymentLink] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -130,16 +129,9 @@ export function AppointmentQuotePanel({ appointment }: { appointment: Appointmen
             onChange={(e) => setQuoteNotes(e.target.value)}
           />
         </Field>
-        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm text-snow">
-          <input
-            type="checkbox"
-            name="include_payment_link"
-            checked={includePaymentLink}
-            onChange={(e) => setIncludePaymentLink(e.target.checked)}
-            className="accent-gold"
-          />
-          Include Stripe deposit link in email
-        </label>
+        <p className="text-xs text-mist">
+          The email includes a secure link where the client can confirm the quote and choose Stripe or cash payment.
+        </p>
         {message && <p className="text-sm text-emerald-400">{message}</p>}
         {error && <p className="text-sm text-red-400">{error}</p>}
         <Button type="submit" disabled={isPending} className="w-full">

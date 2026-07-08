@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeWebhookSecret, isStripeConfigured } from "@/lib/stripe";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getOperationalSettings } from "@/lib/booking/settings";
+import { getBusinessAddressLines } from "@/lib/site-config";
+import { sendEmail, appointmentConfirmedHtml } from "@/lib/email";
 import type Stripe from "stripe";
 
 export async function POST(request: Request) {
@@ -30,6 +32,8 @@ export async function POST(request: Request) {
     const appointmentId = session.metadata?.appointmentId;
     const quoteId = session.metadata?.quoteId;
     const paymentType = session.metadata?.paymentType ?? "deposit";
+    const isQuoteConfirm = session.metadata?.quoteConfirm === "true";
+    const quoteConfirmToken = session.metadata?.quoteConfirmToken;
 
     if (quoteId) {
       try {
@@ -93,7 +97,9 @@ export async function POST(request: Request) {
 
         const { data: appointment } = await admin
           .from("appointments")
-          .select("amount_paid_cents, total_cents, deposit_cents")
+          .select(
+            "amount_paid_cents, total_cents, deposit_cents, customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status",
+          )
           .eq("id", appointmentId)
           .maybeSingle();
 
@@ -115,14 +121,47 @@ export async function POST(request: Request) {
           amount_paid_cents: newPaid,
           payment_status: paymentStatus,
         };
-        if (workflow.autoConfirmOnDepositPaid) {
+
+        if (isQuoteConfirm) {
+          updatePayload.status = "confirmed";
+          updatePayload.payment_method = "stripe";
+          updatePayload.quote_confirmed_at = new Date().toISOString();
+          updatePayload.quote_confirm_token = null;
+        } else if (workflow.autoConfirmOnDepositPaid) {
           updatePayload.status = "confirmed";
         }
 
-        await admin
-          .from("appointments")
-          .update(updatePayload)
-          .eq("id", appointmentId);
+        let updateQuery = admin.from("appointments").update(updatePayload).eq("id", appointmentId);
+        if (isQuoteConfirm && quoteConfirmToken) {
+          updateQuery = updateQuery.eq("quote_confirm_token", quoteConfirmToken);
+        }
+        await updateQuery;
+
+        if (
+          isQuoteConfirm &&
+          appointment &&
+          appointment.status !== "confirmed" &&
+          appointment.customer_email
+        ) {
+          try {
+            const businessAddress = getBusinessAddressLines(siteSettings);
+            await sendEmail({
+              to: appointment.customer_email,
+              subject: `Appointment confirmed — ${appointment.appointment_number ?? "King of Shades"}`,
+              html: appointmentConfirmedHtml({
+                name: appointment.customer_name,
+                service: appointment.service_title,
+                date: appointment.appointment_date,
+                time: appointment.appointment_time,
+                appointmentNumber: appointment.appointment_number ?? undefined,
+                addressLine1: businessAddress.line1,
+                addressLine2: businessAddress.line2,
+              }),
+            });
+          } catch (emailErr) {
+            console.error("[stripe webhook quote confirm email]", emailErr);
+          }
+        }
       } catch (err) {
         console.error("[stripe webhook update]", err);
         return NextResponse.json({ error: "Update failed" }, { status: 500 });

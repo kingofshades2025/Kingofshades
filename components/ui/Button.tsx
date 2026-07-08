@@ -36,6 +36,7 @@ type ButtonAsButton = CommonProps &
 
 type ButtonAsLink = CommonProps & {
   href: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 };
 
 export function Button(props: ButtonAsButton | ButtonAsLink) {
@@ -43,8 +44,9 @@ export function Button(props: ButtonAsButton | ButtonAsLink) {
   const classes = cn(base, variants[variant], sizes[size], className);
 
   if ("href" in props && props.href) {
+    const { href, onClick } = props;
     return (
-      <Link href={props.href} className={classes}>
+      <Link href={href} className={classes} onClick={onClick}>
         {children}
       </Link>
     );

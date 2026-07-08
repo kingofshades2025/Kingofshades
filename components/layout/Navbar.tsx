@@ -11,6 +11,8 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 
+const mobileNav = mainNav.filter((item) => item.href !== "/booking");
+
 export function Navbar({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -25,122 +27,150 @@ export function Navbar({ site }: { site: SiteConfig }) {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+
+    const scrollY = window.scrollY;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.overflow = "hidden";
+
     return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
       document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
+
+  const closeMenu = () => setMenuPath(null);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        scrolled
-          ? "border-b border-line bg-ink/85 backdrop-blur-xl"
-          : "border-b border-transparent bg-gradient-to-b from-black/60 to-transparent",
-      )}
-    >
-      <Container>
-        <nav className="flex h-18 items-center justify-between py-3">
-          <Logo />
-
-          <div className="hidden items-center gap-1 lg:flex">
-            {mainNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "text-gold"
-                    : "text-snow/75 hover:text-white",
-                )}
-              >
-                {item.label}
-                {isActive(item.href) && (
-                  <span className="absolute inset-x-4 -bottom-0.5 h-px bg-gold" />
-                )}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden items-center gap-3 lg:flex">
-            <a
-              href={site.phoneHref}
-              className="inline-flex items-center gap-2 text-sm font-medium text-snow/80 transition-colors hover:text-gold"
-            >
-              <Phone className="h-4 w-4 text-gold" />
-              {site.phone}
-            </a>
-            <Button href="/booking" size="sm">
-              Book Now
-            </Button>
-          </div>
-
-          <button
-            type="button"
-            aria-label={open ? "Close menu" : "Open menu"}
-            onClick={() => setMenuPath((current) => (current === pathname ? null : pathname))}
-            className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-charcoal-light text-snow lg:hidden"
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </nav>
-      </Container>
-
-      {/* Mobile menu */}
-      <div
+    <>
+      <header
         className={cn(
-          "lg:hidden",
-          open ? "pointer-events-auto" : "pointer-events-none",
+          "fixed inset-x-0 top-0 z-[110] transition-all duration-300",
+          open || scrolled
+            ? "border-b border-line bg-ink"
+            : "border-b border-transparent bg-gradient-to-b from-black/80 to-transparent",
         )}
       >
-        <div
-          className={cn(
-            "fixed inset-0 top-18 z-40 bg-ink/95 backdrop-blur-xl transition-opacity duration-300",
-            open ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <Container className="flex h-full flex-col py-8">
-            <div className="flex flex-col gap-1">
-              {mainNav.map((item, i) => (
+        <Container>
+          <nav className="flex h-18 items-center justify-between py-3">
+            <Logo />
+
+            <div className="hidden items-center gap-1 lg:flex">
+              {mainNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  style={{ transitionDelay: open ? `${i * 50}ms` : "0ms" }}
                   className={cn(
-                    "rounded-xl border border-line/60 px-5 py-4 text-lg font-medium transition-all",
+                    "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
                     isActive(item.href)
-                      ? "border-gold/40 bg-gold/10 text-gold"
-                      : "text-snow hover:bg-white/5",
+                      ? "text-gold"
+                      : "text-snow/75 hover:text-white",
                   )}
                 >
                   {item.label}
+                  {isActive(item.href) && (
+                    <span className="absolute inset-x-4 -bottom-0.5 h-px bg-gold" />
+                  )}
                 </Link>
               ))}
             </div>
 
-            <div className="mt-8 space-y-4 border-t border-line pt-8">
-              <Button href="/booking" size="lg" className="w-full">
-                Book Appointment
-              </Button>
-              <Button href="/contact" variant="outline" size="lg" className="w-full">
-                Get a Quote
-              </Button>
+            <div className="hidden items-center gap-3 lg:flex">
               <a
                 href={site.phoneHref}
-                className="flex items-center justify-center gap-2 pt-2 text-base font-medium text-snow/80"
+                className="inline-flex items-center gap-2 text-sm font-medium text-snow/80 transition-colors hover:text-gold"
               >
                 <Phone className="h-4 w-4 text-gold" />
                 {site.phone}
               </a>
+              <Button href="/booking" size="sm">
+                Book Now
+              </Button>
             </div>
-          </Container>
-        </div>
+
+            <button
+              type="button"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              onClick={() =>
+                setMenuPath((current) => (current === pathname ? null : pathname))
+              }
+              className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-charcoal-light text-snow lg:hidden"
+            >
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </nav>
+        </Container>
+      </header>
+
+      {/* Mobile menu — solid full-screen overlay below header */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        aria-hidden={!open}
+        className={cn(
+          "fixed inset-x-0 bottom-0 top-18 z-[100] bg-ink transition-all duration-300 ease-out lg:hidden",
+          open
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none invisible translate-y-2 opacity-0",
+        )}
+      >
+        <Container className="flex h-full flex-col overflow-y-auto overscroll-contain py-6">
+          <nav className="flex flex-col gap-2">
+            {mobileNav.map((item, i) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMenu}
+                style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+                className={cn(
+                  "min-h-12 rounded-xl px-5 py-3.5 text-lg font-medium transition-colors",
+                  isActive(item.href)
+                    ? "bg-gold/10 text-gold"
+                    : "text-snow hover:bg-charcoal-light",
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-auto space-y-3 border-t border-line pt-6">
+            <Button href="/booking" size="lg" className="w-full" onClick={closeMenu}>
+              Book Appointment
+            </Button>
+            <Button
+              href="/contact"
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={closeMenu}
+            >
+              Get a Quote
+            </Button>
+            <a
+              href={site.phoneHref}
+              className="flex min-h-12 items-center justify-center gap-2 text-base font-medium text-snow/80"
+            >
+              <Phone className="h-4 w-4 text-gold" />
+              {site.phone}
+            </a>
+          </div>
+        </Container>
       </div>
-    </header>
+    </>
   );
 }

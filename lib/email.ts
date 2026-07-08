@@ -261,7 +261,7 @@ export function appointmentQuoteSentHtml(data: {
   quotedAmount: string;
   notes?: string;
   pdfUrl?: string;
-  paymentUrl?: string;
+  confirmUrl?: string;
   priceBreakdown?: PriceBreakdownLine[];
 }) {
   const first = data.name.split(" ")[0];
@@ -276,10 +276,10 @@ export function appointmentQuoteSentHtml(data: {
          <a href="${data.pdfUrl}" style="color:#d4af37;font-weight:600;">Download your quote PDF</a>
        </p>`
     : "";
-  const paymentBlock = data.paymentUrl
-    ? `${emailButton("Approve & pay deposit", data.paymentUrl)}
+  const confirmBlock = data.confirmUrl
+    ? `${emailButton("Review & confirm quote", data.confirmUrl)}
        <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
-         Secure checkout — pay your deposit to approve this quote and lock in your appointment.
+         Review your quote, confirm your appointment, and choose to pay online or in cash at the shop.
        </p>`
     : `<p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
          Reply to this email or call us to approve the quote and confirm your appointment.
@@ -303,7 +303,7 @@ export function appointmentQuoteSentHtml(data: {
      ${pricingBlock}
      ${notesBlock}
      ${pdfBlock}
-     ${paymentBlock}`,
+     ${confirmBlock}`,
   );
 }
 

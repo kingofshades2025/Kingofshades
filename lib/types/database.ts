@@ -15,6 +15,8 @@ export type QuoteLineItem = {
 
 export type PaymentStatus = "unpaid" | "deposit_paid" | "paid" | "refunded";
 
+export type PaymentMethod = "stripe" | "cash";
+
 export type QuoteStatus =
   | "new"
   | "reviewing"
@@ -154,6 +156,9 @@ export type Appointment = {
   quote_pdf_url?: string | null;
   quote_notes?: string | null;
   quote_sent_at?: string | null;
+  quote_confirm_token?: string | null;
+  quote_confirmed_at?: string | null;
+  payment_method?: PaymentMethod | null;
   created_at: string;
   updated_at: string;
   customers?: Customer | null;
