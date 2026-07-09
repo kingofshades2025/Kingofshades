@@ -30,6 +30,7 @@ export async function getAdminAppointments(filters?: { status?: string; search?:
   let query = supabase
     .from("appointments")
     .select("*, customers(*), services(*)")
+    .neq("status", "cancelled")
     .order("appointment_date", { ascending: false });
 
   if (filters?.status && filters.status !== "all") {
@@ -110,7 +111,10 @@ export async function getAdminContentSections() {
 export async function getDashboardStats() {
   const supabase = await createClient();
   const [appointments, customers, services, upcoming] = await Promise.all([
-    supabase.from("appointments").select("id", { count: "exact", head: true }),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .neq("status", "cancelled"),
     supabase.from("customers").select("id", { count: "exact", head: true }),
     supabase.from("services").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase
@@ -133,7 +137,8 @@ export async function getCustomerAppointmentCounts(): Promise<Record<string, num
   const { data, error } = await supabase
     .from("appointments")
     .select("customer_id")
-    .not("customer_id", "is", null);
+    .not("customer_id", "is", null)
+    .neq("status", "cancelled");
   if (error) throw new Error(error.message);
 
   const counts: Record<string, number> = {};
@@ -150,6 +155,7 @@ export async function getCustomerAppointments(customerId: string) {
     .from("appointments")
     .select("*")
     .eq("customer_id", customerId)
+    .neq("status", "cancelled")
     .order("appointment_date", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Appointment[];

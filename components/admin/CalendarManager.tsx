@@ -29,7 +29,6 @@ const statusDot: Record<string, string> = {
   confirmed: "bg-emerald-400",
   in_progress: "bg-blue-400",
   completed: "bg-mist",
-  cancelled: "bg-red-400",
 };
 
 const statusCard: Record<string, string> = {
@@ -38,7 +37,6 @@ const statusCard: Record<string, string> = {
   confirmed: "border-emerald-500/40 bg-emerald-500/10",
   in_progress: "border-blue-500/40 bg-blue-500/10",
   completed: "border-mist/30 bg-white/5",
-  cancelled: "border-red-500/30 bg-red-500/5",
 };
 
 function localDateIso(d: Date) {

@@ -24,7 +24,6 @@ const statuses: AppointmentStatus[] = [
   "confirmed",
   "in_progress",
   "completed",
-  "cancelled",
 ];
 
 function detailValue(details: Record<string, string | string[]>, key: string) {

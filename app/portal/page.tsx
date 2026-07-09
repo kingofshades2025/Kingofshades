@@ -36,6 +36,8 @@ export default async function PortalPage() {
 
     .select("*")
 
+    .neq("status", "cancelled")
+
     .order("appointment_date", { ascending: false });
 
 
