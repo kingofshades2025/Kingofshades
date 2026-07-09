@@ -13,6 +13,7 @@ import {
   bookingNotificationHtml,
   bookingRequestReceivedHtml,
 } from "@/lib/email";
+import { upsertCustomerFromContact } from "@/lib/customers/upsert";
 import type { QuoteLineItem } from "@/lib/types/database";
 
 export type BookingPayload = {
@@ -53,65 +54,6 @@ function parseAppointmentDate(dateIso: string): string | null {
   return null;
 }
 
-async function upsertBookingCustomer(
-  admin: ReturnType<typeof createAdminClient>,
-  payload: BookingPayload,
-): Promise<{ customerId: string | null; error?: string }> {
-  const { data: customerId, error: rpcErr } = await admin.rpc("upsert_booking_customer", {
-    p_name: payload.name.trim(),
-    p_email: payload.email.trim(),
-    p_phone: payload.phone.trim() || null,
-    p_address: payload.address?.trim() || null,
-  });
-
-  if (!rpcErr && customerId) {
-    return { customerId: customerId as string };
-  }
-
-  if (rpcErr) {
-    console.error("[booking] customer rpc", rpcErr.message);
-  }
-
-  const email = payload.email.trim();
-  const { data: existing } = await admin
-    .from("customers")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (existing?.id) {
-    await admin
-      .from("customers")
-      .update({
-        name: payload.name.trim(),
-        phone: payload.phone.trim() || null,
-        address: payload.address?.trim() || null,
-      })
-      .eq("id", existing.id);
-    return { customerId: existing.id };
-  }
-
-  const { data: created, error: insertErr } = await admin
-    .from("customers")
-    .insert({
-      name: payload.name.trim(),
-      email,
-      phone: payload.phone.trim() || null,
-      address: payload.address?.trim() || null,
-    })
-    .select("id")
-    .single();
-
-  if (insertErr || !created) {
-    return {
-      customerId: null,
-      error: insertErr?.message ?? "Could not save customer record.",
-    };
-  }
-
-  return { customerId: created.id };
-}
-
 export async function submitBooking(payload: BookingPayload): Promise<BookingResult> {
   const { name, email, service, date, dateIso, time } = payload;
 
@@ -146,7 +88,12 @@ export async function submitBooking(payload: BookingPayload): Promise<BookingRes
       const settings = await getSiteSettings();
       const { booking, payment } = getOperationalSettings(settings);
 
-      const { customerId, error: customerError } = await upsertBookingCustomer(admin, payload);
+      const { customerId, error: customerError } = await upsertCustomerFromContact(admin, {
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        address: payload.address,
+      });
       if (customerError) {
         return { success: false, error: "Could not save your contact information. Please try again." };
       }

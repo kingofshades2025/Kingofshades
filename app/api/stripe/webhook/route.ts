@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ensureAppointmentCustomer, upsertCustomerFromContact } from "@/lib/customers/upsert";
 import { getStripe, getStripeWebhookSecret, isStripeConfigured } from "@/lib/stripe";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getOperationalSettings } from "@/lib/booking/settings";
@@ -64,6 +65,27 @@ export async function POST(request: Request) {
           .from("quote_requests")
           .update({ status: "approved" })
           .eq("id", quoteId);
+
+        const { data: quoteRequest } = await admin
+          .from("quote_requests")
+          .select("customer_id, customer_name, customer_email, customer_phone")
+          .eq("id", quoteId)
+          .maybeSingle();
+
+        if (quoteRequest?.customer_email) {
+          try {
+            const { customerId } = await upsertCustomerFromContact(admin, {
+              name: quoteRequest.customer_name,
+              email: quoteRequest.customer_email,
+              phone: quoteRequest.customer_phone,
+            });
+            if (customerId && quoteRequest.customer_id !== customerId) {
+              await admin.from("quote_requests").update({ customer_id: customerId }).eq("id", quoteId);
+            }
+          } catch (customerErr) {
+            console.error("[stripe webhook quote] customer", customerErr);
+          }
+        }
       } catch (err) {
         console.error("[stripe webhook quote]", err);
         return NextResponse.json({ error: "Update failed" }, { status: 500 });
@@ -98,7 +120,7 @@ export async function POST(request: Request) {
         const { data: appointment } = await admin
           .from("appointments")
           .select(
-            "amount_paid_cents, total_cents, deposit_cents, customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status",
+            "id, customer_id, customer_name, customer_email, customer_phone, customer_address, amount_paid_cents, total_cents, deposit_cents, service_title, appointment_date, appointment_time, appointment_number, status",
           )
           .eq("id", appointmentId)
           .maybeSingle();
@@ -136,6 +158,14 @@ export async function POST(request: Request) {
           updateQuery = updateQuery.eq("quote_confirm_token", quoteConfirmToken);
         }
         await updateQuery;
+
+        if (isQuoteConfirm && appointment) {
+          try {
+            await ensureAppointmentCustomer(admin, appointment);
+          } catch (customerErr) {
+            console.error("[stripe webhook] customer", customerErr);
+          }
+        }
 
         if (
           isQuoteConfirm &&

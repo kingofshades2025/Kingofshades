@@ -14,8 +14,11 @@ import { createQuoteCheckout } from "@/app/actions/payments";
 import { generateQuotePdf } from "@/lib/quotes/generate-quote-pdf";
 import { getAvailableTimeSlots } from "@/app/actions/availability";
 import { generateAppointmentNumber } from "@/lib/booking/pricing";
+import { ensureAppointmentCustomer, upsertCustomerFromContact } from "@/lib/customers/upsert";
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+const CUSTOMER_ON_APPROVAL_STATUSES: AppointmentStatus[] = ["quote_sent", "confirmed"];
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -165,7 +168,7 @@ export async function updateAppointmentStatus(
     const { data: existing } = await supabase
       .from("appointments")
       .select(
-        "customer_name, customer_email, service_title, appointment_date, appointment_time, appointment_number, status, review_submitted_at, quote_sent_at, quote_pdf_url",
+        "id, customer_id, customer_name, customer_email, customer_phone, customer_address, service_title, appointment_date, appointment_time, appointment_number, status, review_submitted_at, quote_sent_at, quote_pdf_url",
       )
       .eq("id", id)
       .maybeSingle();
@@ -199,6 +202,21 @@ export async function updateAppointmentStatus(
       })
       .eq("id", id);
     if (error) return { success: false, error: error.message };
+
+    if (
+      existing &&
+      CUSTOMER_ON_APPROVAL_STATUSES.includes(status) &&
+      existing.status !== status &&
+      existing.customer_email
+    ) {
+      try {
+        const admin = createAdminClient();
+        await ensureAppointmentCustomer(admin, existing);
+        revalidatePath("/admin/customers");
+      } catch (customerErr) {
+        console.error("[updateAppointmentStatus] customer", customerErr);
+      }
+    }
 
     if (existing && status === "confirmed" && existing.status !== "confirmed") {
       try {
@@ -928,7 +946,7 @@ export async function updateQuoteStatus(
 
     const { data: existing } = await supabase
       .from("quote_requests")
-      .select("customer_name, customer_email, service_type, status, quoted_amount_cents")
+      .select("customer_id, customer_name, customer_email, customer_phone, service_type, status, quoted_amount_cents")
       .eq("id", id)
       .maybeSingle();
 
@@ -948,6 +966,28 @@ export async function updateQuoteStatus(
       })
       .eq("id", id);
     if (error) return { success: false, error: error.message };
+
+    if (
+      existing &&
+      (status === "quote_sent" || status === "approved") &&
+      existing.status !== status &&
+      existing.customer_email
+    ) {
+      try {
+        const admin = createAdminClient();
+        const { customerId } = await upsertCustomerFromContact(admin, {
+          name: existing.customer_name,
+          email: existing.customer_email,
+          phone: existing.customer_phone,
+        });
+        if (customerId && existing.customer_id !== customerId) {
+          await admin.from("quote_requests").update({ customer_id: customerId }).eq("id", id);
+        }
+        revalidatePath("/admin/customers");
+      } catch (customerErr) {
+        console.error("[updateQuoteStatus] customer", customerErr);
+      }
+    }
 
     if (
       existing &&
@@ -1095,6 +1135,13 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
       .eq("id", appointmentId);
 
     if (updateErr) return { success: false, error: updateErr.message };
+
+    try {
+      await ensureAppointmentCustomer(admin, appointment);
+      revalidatePath("/admin/customers");
+    } catch (customerErr) {
+      console.error("[sendAppointmentQuote] customer", customerErr);
+    }
 
     const baseUrl = getSiteBaseUrl();
     const confirmUrl = `${baseUrl}/quote/accept?token=${quoteConfirmToken}`;

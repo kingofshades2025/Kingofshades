@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getSiteBaseUrl } from "@/lib/app-url";
 import { sendEmail, getEmailTo, quoteNotificationHtml } from "@/lib/email";
+import { upsertCustomerFromContact } from "@/lib/customers/upsert";
 import { filesFromFormData, uploadClientFiles } from "@/lib/uploads/storage";
 
 export type QuoteResult =
@@ -51,14 +52,11 @@ export async function submitQuoteRequest(formData: FormData): Promise<QuoteResul
         return { success: false, error: "You can upload up to 5 files." };
       }
 
-      let customerId: string | null = null;
-      const { data: customerIdResult } = await admin.rpc("upsert_booking_customer", {
-        p_name: name,
-        p_email: email,
-        p_phone: phone,
-        p_address: null,
+      const { customerId } = await upsertCustomerFromContact(admin, {
+        name,
+        email,
+        phone,
       });
-      customerId = customerIdResult ?? null;
 
       const { data: inserted, error } = await admin
         .from("quote_requests")

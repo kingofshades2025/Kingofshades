@@ -7,6 +7,7 @@ import { getSiteBaseUrl } from "@/lib/app-url";
 import { getSiteSettings } from "@/lib/queries/public";
 import { getBusinessAddressLines } from "@/lib/site-config";
 import { sendEmail, appointmentConfirmedHtml } from "@/lib/email";
+import { ensureAppointmentCustomer } from "@/lib/customers/upsert";
 import { getAppointmentForQuoteConfirm } from "@/lib/queries/quote-confirm";
 import type { PaymentType } from "@/lib/types/database";
 
@@ -122,6 +123,13 @@ export async function confirmQuoteCash(token: string): Promise<QuoteConfirmResul
   }
 
   await sendQuoteConfirmedEmail(appointment);
+
+  try {
+    await ensureAppointmentCustomer(admin, appointment);
+  } catch (customerErr) {
+    console.error("[confirmQuoteCash] customer", customerErr);
+  }
+
   return { success: true };
 }
 
