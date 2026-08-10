@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Plus, ArrowUpRight } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/admin";
-import { getAdminAppointments, getDashboardStats } from "@/lib/queries/admin";
+import {
+  getAdminAppointments,
+  getDashboardStats,
+  getPaymentSummary,
+} from "@/lib/queries/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { formatMoney } from "@/lib/booking/pricing";
 import { Button } from "@/components/ui/Button";
 import {
   AdminPageHeader,
@@ -19,15 +24,21 @@ export default async function AdminDashboardPage() {
     totalCustomers: 0,
     activeServices: 0,
     upcomingAppointments: 0,
+    pendingRequests: 0,
   };
-  let upcoming: Awaited<ReturnType<typeof getAdminAppointments>> = [];
+  let recent: Awaited<ReturnType<typeof getAdminAppointments>> = [];
+  let revenueCents = 0;
 
   if (isSupabaseConfigured()) {
     try {
-      [stats, upcoming] = await Promise.all([
+      const [dashboardStats, appointments, paymentSummary] = await Promise.all([
         getDashboardStats(),
-        getAdminAppointments({ status: "requested" }),
+        getAdminAppointments(),
+        getPaymentSummary().catch(() => ({ revenueCents: 0 })),
       ]);
+      stats = dashboardStats;
+      recent = appointments.slice(0, 8);
+      revenueCents = paymentSummary.revenueCents;
     } catch {
       /* empty dashboard */
     }
@@ -35,10 +46,20 @@ export default async function AdminDashboardPage() {
 
   const statCards = [
     { label: "Total Appointments", value: String(stats.totalAppointments), delta: "Live", icon: "calendar" as const },
-    { label: "Upcoming", value: String(stats.upcomingAppointments), delta: "Requested + confirmed", icon: "clock" as const },
+    {
+      label: "Upcoming",
+      value: String(stats.upcomingAppointments),
+      delta: "Requested, quoted & confirmed",
+      icon: "clock" as const,
+    },
     { label: "Customers", value: String(stats.totalCustomers), delta: "All time", icon: "users" as const },
     { label: "Active Services", value: String(stats.activeServices), delta: "On website", icon: "tag" as const },
-    { label: "Revenue", value: "—", delta: "Stripe coming in Phase 3", icon: "card" as const },
+    {
+      label: "Revenue (30d)",
+      value: formatMoney(revenueCents),
+      delta: "Succeeded payments",
+      icon: "card" as const,
+    },
   ];
 
   return (
@@ -70,7 +91,7 @@ export default async function AdminDashboardPage() {
         }
       >
         <div className="divide-y divide-line">
-          {upcoming.slice(0, 8).map((a) => (
+          {recent.map((a) => (
             <div key={a.id} className="flex items-center gap-4 px-5 py-3.5">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-white">{a.customer_name}</p>
@@ -80,12 +101,10 @@ export default async function AdminDashboardPage() {
                 <p className="text-sm text-snow">{a.appointment_date}</p>
                 <p className="text-xs text-mist">{a.appointment_time}</p>
               </div>
-              <AppointmentStatusBadge
-                status={(a.status.charAt(0).toUpperCase() + a.status.slice(1)) as "Pending" | "Confirmed" | "Completed" | "Cancelled"}
-              />
+              <AppointmentStatusBadge status={a.status} />
             </div>
           ))}
-          {!upcoming.length && (
+          {!recent.length && (
             <p className="px-5 py-8 text-center text-sm text-mist">No appointments yet.</p>
           )}
         </div>

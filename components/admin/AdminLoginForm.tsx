@@ -10,6 +10,7 @@ import { Field, Input, Label } from "@/components/ui/Field";
 
 export function AdminLoginForm() {
   const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
   const [error, setError] = useState<string | null>(
     searchParams.get("error") === "unauthorized"
       ? "You are not authorized to access the admin panel."
@@ -27,6 +28,7 @@ export function AdminLoginForm() {
           const result = await signInWithPassword(
             formData.get("email") as string,
             formData.get("password") as string,
+            nextParam,
           );
           if (!result.success) setError(result.error);
         });

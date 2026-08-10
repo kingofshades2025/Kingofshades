@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-
+import { useRouter } from "next/navigation";
 import type { QuoteRequest, QuoteStatus } from "@/lib/types/database";
-
 import { updateQuoteStatus } from "@/app/actions/admin";
-
 import { AdminFeedback } from "@/components/admin/AdminFeedback";
-
 import { AdminPageHeader } from "@/components/admin/AdminUI";
-
 import { UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
-
 import { Button } from "@/components/ui/Button";
-
 import { Field, Input } from "@/components/ui/Field";
-
 import { formatMoney } from "@/lib/booking/pricing";
 
 const statuses: QuoteStatus[] = ["new", "reviewing", "quote_sent", "approved", "rejected"];
@@ -27,6 +20,7 @@ export function QuotesManager({
   quotes: QuoteRequest[];
   highlightId?: string;
 }) {
+  const router = useRouter();
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       quotes.map((q) => [
@@ -71,6 +65,7 @@ export function QuotesManager({
       const result = await updateQuoteStatus(id, status, quotedAmountCents);
       if (result.success) {
         setMessage(status === "quote_sent" ? "Quote sent and customer emailed." : "Quote updated.");
+        router.refresh();
       } else {
         setError(result.error);
       }

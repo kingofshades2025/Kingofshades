@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { Customer } from "@/lib/types/database";
 import { deleteCustomer, upsertCustomer } from "@/app/actions/admin";
@@ -18,6 +19,7 @@ export function CustomersManager({
   appointmentCounts: Record<string, number>;
   loadError?: string | null;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<Customer | null>(null);
   const [search, setSearch] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -25,7 +27,10 @@ export function CustomersManager({
 
   const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertCustomer, {
     successMessage: editing?.id ? "Customer updated." : "Customer added.",
-    onSuccess: () => setEditing(null),
+    onSuccess: () => {
+      setEditing(null);
+      router.refresh();
+    },
   });
 
   const filtered = useMemo(() => {
@@ -66,6 +71,7 @@ export function CustomersManager({
         const result = await deleteCustomer(customer.id);
         if (result.success) {
           if (editing?.id === customer.id) setEditing(null);
+          router.refresh();
         } else {
           setDeleteError(result.error);
         }

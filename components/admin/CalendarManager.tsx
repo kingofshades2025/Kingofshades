@@ -66,7 +66,13 @@ function groupByDate(appointments: Appointment[]) {
   return map;
 }
 
-export function CalendarManager({ appointments }: { appointments: Appointment[] }) {
+export function CalendarManager({
+  appointments,
+  blockedDates = [],
+}: {
+  appointments: Appointment[];
+  blockedDates?: string[];
+}) {
   const now = new Date();
   const todayIso = localDateIso(now);
 
@@ -77,6 +83,7 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
   const dayPanelRef = useRef<HTMLDivElement>(null);
 
   const byDate = useMemo(() => groupByDate(appointments), [appointments]);
+  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   useEffect(() => {
     if (!selectedIso || !dayPanelRef.current) return;
@@ -167,6 +174,7 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
             const dayAppts = byDate.get(iso) ?? [];
             const isToday = iso === todayIso;
             const isSelected = selectedIso === iso;
+            const isBlocked = blockedSet.has(iso);
             const preview = dayAppts.slice(0, 2);
             const overflow = dayAppts.length - preview.length;
 
@@ -186,7 +194,9 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                   "group flex min-h-[5.5rem] cursor-pointer flex-col rounded-xl border p-1.5 text-left transition-all sm:min-h-[6.5rem] sm:p-2",
                   isSelected
                     ? "border-gold/60 bg-gold/10 ring-1 ring-gold/30"
-                    : "border-line/80 bg-charcoal-light/40 hover:border-gold/30 hover:bg-charcoal-light/70",
+                    : isBlocked
+                      ? "border-red-500/30 bg-red-500/5 hover:border-red-500/40"
+                      : "border-line/80 bg-charcoal-light/40 hover:border-gold/30 hover:bg-charcoal-light/70",
                   isToday && !isSelected && "ring-1 ring-gold/25",
                 )}
               >
@@ -199,6 +209,12 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
                 >
                   {day}
                 </span>
+
+                {isBlocked && (
+                  <span className="mb-0.5 truncate rounded px-1 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-300">
+                    Blocked
+                  </span>
+                )}
 
                 <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
                   {preview.map((a) => (
@@ -248,6 +264,7 @@ export function CalendarManager({ appointments }: { appointments: Appointment[] 
             <div>
               <h3 className="font-display text-lg font-semibold text-white">{formatDayLabel(selectedIso)}</h3>
               <p className="mt-0.5 text-sm text-mist">
+                {blockedSet.has(selectedIso) ? "Blocked for public booking · " : ""}
                 {selectedAppointments.length === 0
                   ? "No bookings scheduled"
                   : `${selectedAppointments.length} booking${selectedAppointments.length === 1 ? "" : "s"}`}

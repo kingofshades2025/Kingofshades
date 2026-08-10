@@ -272,7 +272,11 @@ export async function updateAppointmentStatus(
   }
 }
 
-const CONFIRMED_SLOT_STATUSES: AppointmentStatus[] = ["confirmed", "in_progress"];
+const CONFIRMED_SLOT_STATUSES: AppointmentStatus[] = [
+  "confirmed",
+  "in_progress",
+  "completed",
+];
 
 async function checkConfirmedSlotConflict(
   supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
@@ -402,7 +406,7 @@ export async function rescheduleAppointment(formData: FormData): Promise<ActionR
     if (!conflict.ok) return { success: false, error: conflict.error };
 
     if (CONFIRMED_SLOT_STATUSES.includes(existing.status as AppointmentStatus)) {
-      const availability = await getAvailableTimeSlots(dateIso);
+      const availability = await getAvailableTimeSlots(dateIso, id);
       if (availability.closed) {
         return { success: false, error: "That date is not available for booking." };
       }
@@ -421,10 +425,16 @@ export async function rescheduleAppointment(formData: FormData): Promise<ActionR
       .update({ appointment_date: dateIso, appointment_time: time })
       .eq("id", id);
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      if (error.code === "23505") {
+        return { success: false, error: "That time slot conflicts with another booking." };
+      }
+      return { success: false, error: error.message };
+    }
 
     revalidatePath("/admin/appointments");
     revalidatePath("/admin/calendar");
+    revalidatePath("/admin");
     return { success: true };
   } catch (err) {
     logActionError("rescheduleAppointment", err);
@@ -521,7 +531,7 @@ export async function createManualAppointment(formData: FormData): Promise<Actio
 
     let customerId = customer?.id ?? null;
     if (!customerId) {
-      const { data: created } = await supabase
+      const { data: created, error: customerErr } = await supabase
         .from("customers")
         .insert({
           name: customerName,
@@ -531,6 +541,12 @@ export async function createManualAppointment(formData: FormData): Promise<Actio
         })
         .select("id")
         .single();
+      if (customerErr) {
+        return {
+          success: false,
+          error: customerErr.message || "Could not create customer record.",
+        };
+      }
       customerId = created?.id ?? null;
     }
 
@@ -568,6 +584,7 @@ export async function createManualAppointment(formData: FormData): Promise<Actio
 
     revalidatePath("/admin/appointments");
     revalidatePath("/admin/calendar");
+    revalidatePath("/admin/customers");
     revalidatePath("/admin");
     return { success: true };
   } catch (err) {
@@ -786,7 +803,7 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
         slotDurationMinutes: Number(formData.get("slot_duration") || 120),
         bufferMinutes: Number(formData.get("buffer_minutes") || 15),
         maxDailyAppointments: Number(formData.get("max_daily_appointments") || 8),
-        closedWeekdays: [0],
+        closedWeekdays: formData.get("sunday_closed") === "true" ? [0] : [],
         weekdayStart: (formData.get("weekday_start") as string)?.trim() || "08:00",
         weekdayEnd: (formData.get("weekday_end") as string)?.trim() || "18:00",
         saturdayStart: (formData.get("saturday_start") as string)?.trim() || "09:00",
@@ -1078,8 +1095,9 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
     const businessAddress = getBusinessAddressLines(siteSettings);
 
     const estimateItems = parseQuoteLineItems(appointment.estimate_line_items);
+    const estimateTotal = estimateItems.reduce((sum, item) => sum + item.amount_cents, 0);
     const quoteLineItems =
-      estimateItems.length > 0
+      estimateItems.length > 0 && estimateTotal === quoteAmountCents
         ? estimateItems
         : [{ label: appointment.service_title, amount_cents: quoteAmountCents }];
 
@@ -1152,27 +1170,41 @@ export async function sendAppointmentQuote(formData: FormData): Promise<ActionRe
       amountCents: item.amount_cents,
     }));
 
-    await sendEmail({
-      to: appointment.customer_email,
-      subject: `Your quote from King of Shades — ${appointment.service_title}`,
-      html: appointmentQuoteSentHtml({
-        name: appointment.customer_name,
-        service: appointment.service_title,
-        date: appointment.appointment_date,
-        time: appointment.appointment_time,
-        appointmentNumber: appointment.appointment_number ?? undefined,
-        quotedAmount: formatMoney(quoteAmountCents),
-        notes: quoteNotes ?? undefined,
-        pdfUrl: publicUrl.publicUrl,
-        confirmUrl,
-        priceBreakdown: priceBreakdownForEmail,
-      }),
-      attachments: [{ filename: `quote-${appointment.appointment_number ?? "king-of-shades"}.pdf`, content: pdfBytes }],
-    });
-
     revalidatePath("/admin/appointments");
     revalidatePath("/admin/calendar");
     revalidatePath("/admin");
+
+    try {
+      await sendEmail({
+        to: appointment.customer_email,
+        subject: `Your quote from King of Shades — ${appointment.service_title}`,
+        html: appointmentQuoteSentHtml({
+          name: appointment.customer_name,
+          service: appointment.service_title,
+          date: appointment.appointment_date,
+          time: appointment.appointment_time,
+          appointmentNumber: appointment.appointment_number ?? undefined,
+          quotedAmount: formatMoney(quoteAmountCents),
+          notes: quoteNotes ?? undefined,
+          pdfUrl: publicUrl.publicUrl,
+          confirmUrl,
+          priceBreakdown: priceBreakdownForEmail,
+        }),
+        attachments: [
+          {
+            filename: `quote-${appointment.appointment_number ?? "king-of-shades"}.pdf`,
+            content: pdfBytes,
+          },
+        ],
+      });
+    } catch (emailErr) {
+      console.error("[sendAppointmentQuote] email", emailErr);
+      return {
+        success: false,
+        error: "Quote was saved, but the email failed to send. Please try again.",
+      };
+    }
+
     return { success: true };
   } catch (err) {
     logActionError("sendAppointmentQuote", err);

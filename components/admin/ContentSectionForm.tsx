@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { saveContentSection } from "@/app/actions/admin";
 import { AdminFeedback, useAdminAction } from "@/components/admin/AdminFeedback";
 import { Button } from "@/components/ui/Button";
@@ -20,8 +21,10 @@ export function ContentSectionForm({
   defaultTitle?: string;
   defaultBody?: string;
 }) {
+  const router = useRouter();
   const { run, isPending, message, error } = useAdminAction(saveContentSection, {
     successMessage: "Section saved.",
+    onSuccess: () => router.refresh(),
   });
 
   return (

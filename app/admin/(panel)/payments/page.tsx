@@ -69,7 +69,14 @@ export default async function PaymentsPage() {
                     <td className="px-5 py-4 capitalize text-snow/85">{p.payment_type}</td>
                     <td className="px-5 py-4 font-semibold text-white">{formatMoney(p.amount_cents)}</td>
                     <td className="px-5 py-4 capitalize text-snow/85">{p.status}</td>
-                    <td className="px-5 py-4 text-mist font-mono text-xs">{p.appointment_id?.slice(0, 8) ?? "—"}</td>
+                    <td className="px-5 py-4 text-mist text-xs">
+                      {p.appointments?.customer_name ||
+                        p.appointments?.appointment_number ||
+                        (p.appointment_id ? p.appointment_id.slice(0, 8) : "—")}
+                      {p.appointments?.service_title ? (
+                        <span className="mt-0.5 block text-mist/70">{p.appointments.service_title}</span>
+                      ) : null}
+                    </td>
                   </tr>
                 ))
               )}

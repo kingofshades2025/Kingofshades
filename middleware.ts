@@ -71,22 +71,29 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (!profile) {
-      await supabase.auth.signOut();
+      // Do not sign out — portal customers share the same auth session.
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("error", "unauthorized");
-      const redirectResponse = NextResponse.redirect(url);
-      for (const cookie of supabaseResponse.cookies.getAll()) {
-        redirectResponse.cookies.set(cookie.name, cookie.value);
-      }
-      return redirectResponse;
+      return NextResponse.redirect(url);
     }
   }
 
   if (isPublicAdmin && user && pathname === "/admin/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
-    return NextResponse.redirect(url);
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile) {
+      const next = request.nextUrl.searchParams.get("next");
+      const url = request.nextUrl.clone();
+      url.pathname =
+        next && next.startsWith("/admin") && !next.startsWith("//") ? next : "/admin";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

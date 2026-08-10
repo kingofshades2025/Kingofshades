@@ -17,7 +17,7 @@ export default async function AdminPanelLayout({
   if (isSupabaseConfigured()) {
     try {
       const stats = await getDashboardStats();
-      pendingCount = stats.upcomingAppointments;
+      pendingCount = stats.pendingRequests;
     } catch {
       pendingCount = 0;
     }

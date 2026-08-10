@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import type { GalleryItem } from "@/lib/types/database";
 import { galleryCategories } from "@/lib/data";
@@ -12,12 +13,16 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 
 export function GalleryManager({ items }: { items: GalleryItem[] }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<GalleryItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertGalleryItem, {
     successMessage: editing?.id ? "Gallery item updated." : "Gallery item added.",
-    onSuccess: () => setEditing(null),
+    onSuccess: () => {
+      setEditing(null);
+      router.refresh();
+    },
   });
 
   const startAdd = () => {
@@ -37,7 +42,10 @@ export function GalleryManager({ items }: { items: GalleryItem[] }) {
     setDeleteError(null);
     const result = await deleteGalleryItem(id);
     if (!result.success) setDeleteError(result.error);
-    else if (editing?.id === id) setEditing(null);
+    else {
+      if (editing?.id === id) setEditing(null);
+      router.refresh();
+    }
   };
 
   return (

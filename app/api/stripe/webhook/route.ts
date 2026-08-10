@@ -157,9 +157,18 @@ export async function POST(request: Request) {
         if (isQuoteConfirm && quoteConfirmToken) {
           updateQuery = updateQuery.eq("quote_confirm_token", quoteConfirmToken);
         }
-        await updateQuery;
+        const { data: updatedRows, error: updateErr } = await updateQuery.select("id");
+        const appointmentUpdated = !updateErr && (updatedRows?.length ?? 0) > 0;
+        if (updateErr) {
+          console.error("[stripe webhook] appointment update", updateErr.message);
+        } else if (isQuoteConfirm && !appointmentUpdated) {
+          console.warn(
+            "[stripe webhook] quote confirm skipped — token already used or appointment updated elsewhere",
+            appointmentId,
+          );
+        }
 
-        if (isQuoteConfirm && appointment) {
+        if (isQuoteConfirm && appointmentUpdated && appointment) {
           try {
             await ensureAppointmentCustomer(admin, appointment);
           } catch (customerErr) {
@@ -169,6 +178,7 @@ export async function POST(request: Request) {
 
         if (
           isQuoteConfirm &&
+          appointmentUpdated &&
           appointment &&
           appointment.status !== "confirmed" &&
           appointment.customer_email

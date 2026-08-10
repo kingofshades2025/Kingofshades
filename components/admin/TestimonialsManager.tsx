@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Testimonial } from "@/lib/types/database";
 import { deleteTestimonial, upsertTestimonial } from "@/app/actions/admin";
 import { AdminFeedback, useAdminAction } from "@/components/admin/AdminFeedback";
@@ -9,9 +10,12 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Field";
 
 export function TestimonialsManager({ testimonials }: { testimonials: Testimonial[] }) {
+  const router = useRouter();
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const { run, isPending, message, error } = useAdminAction(upsertTestimonial, {
-    successMessage: "Testimonial added.",
+    successMessage: "Testimonial saved.",
+    onSuccess: () => router.refresh(),
   });
 
   const handleDelete = async (id: string) => {
@@ -19,7 +23,28 @@ export function TestimonialsManager({ testimonials }: { testimonials: Testimonia
     setDeleteError(null);
     const result = await deleteTestimonial(id);
     if (!result.success) setDeleteError(result.error);
+    else router.refresh();
   };
+
+  const handleApprovalToggle = async (t: Testimonial) => {
+    setDeleteError(null);
+    setApprovingId(t.id);
+    const fd = new FormData();
+    fd.set("id", t.id);
+    fd.set("customer_name", t.customer_name);
+    fd.set("review", t.review);
+    fd.set("role", t.role ?? "");
+    fd.set("rating", String(t.rating ?? 5));
+    fd.set("is_approved", t.is_approved ? "false" : "true");
+    fd.set("sort_order", String(t.sort_order ?? 0));
+    const result = await upsertTestimonial(fd);
+    setApprovingId(null);
+    if (!result.success) setDeleteError(result.error);
+    else router.refresh();
+  };
+
+  const pending = testimonials.filter((t) => !t.is_approved);
+  const approved = testimonials.filter((t) => t.is_approved);
 
   return (
     <>
@@ -51,21 +76,72 @@ export function TestimonialsManager({ testimonials }: { testimonials: Testimonia
         <div className="sm:col-span-2"><Button type="submit" disabled={isPending}>Add testimonial</Button></div>
       </form>
 
+      {pending.length > 0 && (
+        <div className="mb-8 space-y-4">
+          <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-gold">
+            Pending approval ({pending.length})
+          </h3>
+          {pending.map((t) => (
+            <div key={t.id} className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium text-white">{t.customer_name}</p>
+                  <p className="text-xs text-mist">{t.role} · {t.rating}★ · Pending approval</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    size="sm"
+                    disabled={approvingId === t.id}
+                    onClick={() => void handleApprovalToggle(t)}
+                  >
+                    {approvingId === t.id ? "Saving…" : "Approve"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => void handleDelete(t.id)}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-mist">&ldquo;{t.review}&rdquo;</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-4">
-        {testimonials.map((t) => (
+        {approved.length > 0 && (
+          <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mist">
+            Live on site ({approved.length})
+          </h3>
+        )}
+        {approved.map((t) => (
           <div key={t.id} className="rounded-2xl border border-line bg-surface/70 p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-medium text-white">{t.customer_name}</p>
-                <p className="text-xs text-mist">{t.role} · {t.rating}★ · {t.is_approved ? "Live" : "Pending approval"}</p>
+                <p className="text-xs text-mist">{t.role} · {t.rating}★ · Live</p>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => void handleDelete(t.id)}>
-                Delete
-              </Button>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={approvingId === t.id}
+                  onClick={() => void handleApprovalToggle(t)}
+                >
+                  {approvingId === t.id ? "Saving…" : "Hide"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => void handleDelete(t.id)}>
+                  Delete
+                </Button>
+              </div>
             </div>
             <p className="mt-3 text-sm text-mist">&ldquo;{t.review}&rdquo;</p>
           </div>
         ))}
+        {!testimonials.length && (
+          <p className="rounded-2xl border border-line px-5 py-8 text-center text-sm text-mist">
+            No testimonials yet.
+          </p>
+        )}
       </div>
     </>
   );

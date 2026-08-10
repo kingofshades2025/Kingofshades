@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { Service } from "@/lib/types/database";
 import { deleteService, upsertService } from "@/app/actions/admin";
@@ -19,13 +20,17 @@ export function ServicesManager({
   services: Service[];
   loadError?: string | null;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<Service | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletePending, startDelete] = useTransition();
 
   const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertService, {
     successMessage: "Service saved.",
-    onSuccess: () => setEditing(null),
+    onSuccess: () => {
+      setEditing(null);
+      router.refresh();
+    },
   });
 
   const handleDelete = (id: string) => {
@@ -36,6 +41,7 @@ export function ServicesManager({
         const result = await deleteService(id);
         if (result.success) {
           if (editing?.id === id) setEditing(null);
+          router.refresh();
         } else {
           setDeleteError(result.error);
         }

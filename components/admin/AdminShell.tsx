@@ -246,10 +246,10 @@ export function AdminShell({
                       <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
                       <span>
                         <span className="block font-medium text-white">
-                          {pendingCount} upcoming appointment{pendingCount === 1 ? "" : "s"}
+                          {pendingCount} pending request{pendingCount === 1 ? "" : "s"}
                         </span>
                         <span className="mt-0.5 block text-xs text-mist">
-                          View requests and confirmed bookings
+                          New booking requests awaiting review
                         </span>
                       </span>
                     </Link>

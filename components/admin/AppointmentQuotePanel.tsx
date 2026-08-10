@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Appointment } from "@/lib/types/database";
 import { sendAppointmentQuote } from "@/app/actions/admin";
 import { photoUrlsFromDetails, UploadedFilesGallery } from "@/components/ui/ClientFileUpload";
@@ -15,6 +16,7 @@ function defaultQuoteAmount(appointment: Appointment) {
 }
 
 export function AppointmentQuotePanel({ appointment }: { appointment: Appointment }) {
+  const router = useRouter();
   const [quoteAmount, setQuoteAmount] = useState(() => defaultQuoteAmount(appointment));
   const [quoteNotes, setQuoteNotes] = useState(appointment.quote_notes ?? "");
   const [message, setMessage] = useState<string | null>(null);
@@ -35,8 +37,13 @@ export function AppointmentQuotePanel({ appointment }: { appointment: Appointmen
       const result = await sendAppointmentQuote(fd);
       if (result.success) {
         setMessage("Quote emailed to client with PDF attached.");
+        router.refresh();
       } else {
         setError(result.error);
+        // Quote may already be saved even when email fails — refresh to show latest state.
+        if (result.error.includes("Quote was saved")) {
+          router.refresh();
+        }
       }
     });
   };

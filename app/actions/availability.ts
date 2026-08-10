@@ -28,7 +28,10 @@ function fallbackSlots(dateIso: string, booking: ReturnType<typeof getOperationa
   };
 }
 
-export async function getAvailableTimeSlots(dateIso: string): Promise<AvailabilityResult> {
+export async function getAvailableTimeSlots(
+  dateIso: string,
+  excludeAppointmentId?: string,
+): Promise<AvailabilityResult> {
   if (!dateIso || isPastDate(dateIso)) {
     return { slots: [], closed: true };
   }
@@ -66,11 +69,17 @@ export async function getAvailableTimeSlots(dateIso: string): Promise<Availabili
 
     if (blocked) return { slots: [], closed: true };
 
-    const { data: booked, count, error: bookedErr } = await admin
+    let bookedQuery = admin
       .from("appointments")
       .select("appointment_time", { count: "exact" })
       .eq("appointment_date", dateIso)
       .in("status", ["confirmed", "in_progress", "completed"]);
+
+    if (excludeAppointmentId) {
+      bookedQuery = bookedQuery.neq("id", excludeAppointmentId);
+    }
+
+    const { data: booked, count, error: bookedErr } = await bookedQuery;
 
     if (bookedErr) {
       console.error("[availability] appointments", bookedErr.message);

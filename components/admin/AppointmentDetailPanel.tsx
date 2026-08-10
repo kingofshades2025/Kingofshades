@@ -73,19 +73,27 @@ export function AppointmentDetailPanel({ appointment }: { appointment: Appointme
   useEffect(() => {
     let cancelled = false;
     setSlotsLoading(true);
-    void getAvailableTimeSlots(rescheduleDate).then((result) => {
+    void getAvailableTimeSlots(rescheduleDate, appointment.id).then((result) => {
       if (cancelled) return;
       const slots = result.slots;
-      setTimeSlots(slots);
-      if (!slots.includes(rescheduleTime) && slots.length > 0) {
-        setRescheduleTime(slots[0]);
-      }
+      const sameDate = rescheduleDate === appointment.appointment_date;
+      const currentTime = appointment.appointment_time;
+      const withCurrent =
+        sameDate && currentTime && !slots.includes(currentTime)
+          ? [currentTime, ...slots]
+          : slots;
+      setTimeSlots(withCurrent);
+      setRescheduleTime((prev) => {
+        if (withCurrent.includes(prev)) return prev;
+        if (sameDate && currentTime && withCurrent.includes(currentTime)) return currentTime;
+        return withCurrent[0] ?? prev;
+      });
       setSlotsLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [rescheduleDate, rescheduleTime]);
+  }, [rescheduleDate, appointment.id, appointment.appointment_date, appointment.appointment_time]);
 
   const handleStatusChange = (status: AppointmentStatus) => {
     setStatusError(null);
@@ -226,7 +234,10 @@ export function AppointmentDetailPanel({ appointment }: { appointment: Appointme
                 </Field>
                 <Field label="Time">
                   {slotsLoading ? (
-                    <Input disabled placeholder="Loading slots…" />
+                    <>
+                      <input type="hidden" name="appointment_time" value={rescheduleTime} />
+                      <Input disabled placeholder="Loading slots…" />
+                    </>
                   ) : timeSlots.length > 0 ? (
                     <Select
                       name="appointment_time"
@@ -251,7 +262,12 @@ export function AppointmentDetailPanel({ appointment }: { appointment: Appointme
                   )}
                 </Field>
               </div>
-              <Button type="submit" size="sm" variant="outline" disabled={rescheduleAction.isPending || isCancelled}>
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                disabled={rescheduleAction.isPending || isCancelled || slotsLoading || !rescheduleTime}
+              >
                 {rescheduleAction.isPending ? "Rescheduling…" : "Reschedule"}
               </Button>
             </form>
@@ -276,7 +292,7 @@ export function AppointmentDetailPanel({ appointment }: { appointment: Appointme
               disabled={statusPending || appointment.status === s || isCancelled}
               onClick={() => handleStatusChange(s)}
             >
-              {s.replace("_", " ")}
+              {s.replaceAll("_", " ")}
             </Button>
           ))}
         </div>

@@ -110,7 +110,8 @@ export async function getAdminContentSections() {
 
 export async function getDashboardStats() {
   const supabase = await createClient();
-  const [appointments, customers, services, upcoming] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [appointments, customers, services, upcoming, pending] = await Promise.all([
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
@@ -121,7 +122,11 @@ export async function getDashboardStats() {
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .in("status", ["requested", "quote_sent", "confirmed"])
-      .gte("appointment_date", new Date().toISOString().slice(0, 10)),
+      .gte("appointment_date", today),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "requested"),
   ]);
 
   return {
@@ -129,6 +134,7 @@ export async function getDashboardStats() {
     totalCustomers: customers.count ?? 0,
     activeServices: services.count ?? 0,
     upcomingAppointments: upcoming.count ?? 0,
+    pendingRequests: pending.count ?? 0,
   };
 }
 
@@ -168,7 +174,13 @@ export async function getAdminPayments() {
     .select("*, appointments(customer_name, service_title, appointment_number)")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []) as Payment[];
+  return (data ?? []) as (Payment & {
+    appointments?: {
+      customer_name: string | null;
+      service_title: string | null;
+      appointment_number: string | null;
+    } | null;
+  })[];
 }
 
 export async function getAdminQuotes() {
@@ -196,10 +208,12 @@ export async function getPaymentSummary() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("payments")
     .select("amount_cents, status, payment_type, created_at")
     .gte("created_at", thirtyDaysAgo.toISOString());
+
+  if (error) throw new Error(error.message);
 
   const rows = data ?? [];
   const succeeded = rows.filter((r) => r.status === "succeeded");

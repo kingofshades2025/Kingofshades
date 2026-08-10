@@ -11,6 +11,7 @@ export type AuthResult =
 export async function signInWithPassword(
   email: string,
   password: string,
+  next?: string | null,
 ): Promise<AuthResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -36,7 +37,9 @@ export async function signInWithPassword(
     };
   }
 
-  redirect("/admin");
+  const safeNext =
+    next && next.startsWith("/admin") && !next.startsWith("//") ? next : "/admin";
+  redirect(safeNext);
 }
 
 export async function requestPasswordReset(email: string): Promise<AuthResult> {

@@ -24,6 +24,7 @@ export function ManualAppointmentForm({
   const [time, setTime] = useState("");
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [serviceId, setServiceId] = useState("");
   const [vehicleYear, setVehicleYear] = useState("");
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
@@ -34,6 +35,7 @@ export function ManualAppointmentForm({
       setOpen(false);
       setDateIso("");
       setTime("");
+      setServiceId("");
       setVehicleYear("");
       setVehicleMake("");
       setVehicleModel("");
@@ -51,17 +53,23 @@ export function ManualAppointmentForm({
     void getAvailableTimeSlots(dateIso).then((result) => {
       if (cancelled) return;
       setTimeSlots(result.slots);
-      if (result.slots.length > 0 && !result.slots.includes(time)) {
-        setTime(result.slots[0]);
-      }
+      setTime((prev) => {
+        if (result.slots.includes(prev)) return prev;
+        return result.slots[0] ?? "";
+      });
       setSlotsLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [dateIso, time]);
+  }, [dateIso]);
 
   const activeServices = services.filter((s) => s.is_active);
+
+  const handleServiceChange = (title: string) => {
+    const match = activeServices.find((s) => s.title === title);
+    setServiceId(match?.id ?? "");
+  };
 
   return (
     <>
@@ -122,7 +130,12 @@ export function ManualAppointmentForm({
               </div>
 
               <Field label="Service">
-                <Select name="service_title" required defaultValue="">
+                <Select
+                  name="service_title"
+                  required
+                  defaultValue=""
+                  onChange={(e) => handleServiceChange(e.target.value)}
+                >
                   <option value="" disabled>
                     Select service…
                   </option>
@@ -134,7 +147,7 @@ export function ManualAppointmentForm({
                   <option value="Custom Quote">Custom Quote</option>
                 </Select>
               </Field>
-              <input type="hidden" name="service_id" value="" />
+              <input type="hidden" name="service_id" value={serviceId} />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Date">
@@ -148,7 +161,10 @@ export function ManualAppointmentForm({
                 </Field>
                 <Field label="Time">
                   {slotsLoading ? (
-                    <Input disabled placeholder="Loading…" />
+                    <>
+                      <input type="hidden" name="appointment_time" value={time} />
+                      <Input disabled placeholder="Loading…" />
+                    </>
                   ) : timeSlots.length > 0 ? (
                     <Select name="appointment_time" value={time} onChange={(e) => setTime(e.target.value)} required>
                       {timeSlots.map((slot) => (
@@ -180,7 +196,7 @@ export function ManualAppointmentForm({
                   <Select name="status" defaultValue="requested">
                     {(["requested", "quote_sent", "confirmed"] as AppointmentStatus[]).map((s) => (
                       <option key={s} value={s}>
-                        {s.replace("_", " ")}
+                        {s.replaceAll("_", " ")}
                       </option>
                     ))}
                   </Select>
@@ -212,7 +228,7 @@ export function ManualAppointmentForm({
               </label>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" disabled={isPending || slotsLoading || (Boolean(dateIso) && !time)}>
                   {isPending ? "Creating…" : "Create appointment"}
                 </Button>
                 <Button type="button" variant="subtle" onClick={() => setOpen(false)}>
