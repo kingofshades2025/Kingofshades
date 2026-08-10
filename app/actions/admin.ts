@@ -835,9 +835,32 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
       },
     };
 
-    const { error } = id && isUuid(id)
-      ? await supabase.from("site_settings").update(payload).eq("id", id)
-      : await supabase.from("site_settings").insert(payload);
+    const writeSettings = async (body: Record<string, unknown>) =>
+      id && isUuid(id)
+        ? supabase.from("site_settings").update(body).eq("id", id)
+        : supabase.from("site_settings").insert(body);
+
+    let { error } = await writeSettings(payload);
+
+    // Older production DBs may be missing appointment_settings until the migration runs.
+    if (
+      error?.message?.includes("appointment_settings") &&
+      error.message.includes("schema cache")
+    ) {
+      const { appointment_settings: _omit, ...withoutAppointment } = payload;
+      void _omit;
+      ({ error } = await writeSettings(withoutAppointment));
+      if (!error) {
+        revalidatePath("/", "layout");
+        revalidatePath("/contact");
+        revalidatePath("/admin/settings");
+        return {
+          success: false,
+          error:
+            "Business info saved, but appointment workflow settings need a database update. Run the latest Supabase migration (appointment_settings), then save again.",
+        };
+      }
+    }
 
     if (error) return { success: false, error: error.message };
     revalidatePath("/", "layout");

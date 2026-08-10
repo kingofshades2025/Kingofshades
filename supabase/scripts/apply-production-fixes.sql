@@ -10,3 +10,10 @@ alter table public.services
 grant insert on public.content_sections to authenticated;
 grant insert on public.site_settings to authenticated;
 grant insert on public.customers to authenticated;
+
+-- Admin Settings: appointment workflow JSON column
+alter table public.site_settings
+  add column if not exists appointment_settings jsonb not null default '{
+    "requireQuoteBeforeConfirm": true,
+    "autoConfirmOnDepositPaid": true
+  }'::jsonb;
