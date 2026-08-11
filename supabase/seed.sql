@@ -39,7 +39,16 @@ insert into public.content_sections (section_key, title, body, metadata) values
 on conflict (section_key) do update set
   title = excluded.title,
   body = excluded.body,
-  metadata = excluded.metadata;
+  metadata = excluded.metadata || coalesce(
+    (
+      select jsonb_object_agg(key, value)
+      from jsonb_each(content_sections.metadata) as meta(key, value)
+      where key in ('image_url', 'before_image_url', 'after_image_url')
+        and value is not null
+        and value::text not in ('null', '""')
+    ),
+    '{}'::jsonb
+  );
 
 insert into public.services (slug, title, tagline, description, category, price_label, accent, benefits, features, sort_order) values
   ('automotive', 'Automotive Window Tinting', 'Cooler rides, sharper looks, total UV defense.',

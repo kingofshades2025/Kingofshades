@@ -52,8 +52,9 @@ export default async function ServicesPage() {
       </PageHeader>
 
       {services.map((service, i) => {
-        const Icon = icons[service.accent];
-        const hue = categoryHueForAccent[service.accent];
+        const accent = service.accent in icons ? service.accent : "automotive";
+        const Icon = icons[accent];
+        const hue = categoryHueForAccent[accent] ?? categoryHueForAccent.automotive;
         const reversed = i % 2 === 1;
         return (
           <section

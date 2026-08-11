@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { Service } from "@/lib/types/database";
 import { deleteService, upsertService } from "@/app/actions/admin";
@@ -19,13 +20,19 @@ export function ServicesManager({
   services: Service[];
   loadError?: string | null;
 }) {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [editing, setEditing] = useState<Service | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletePending, startDelete] = useTransition();
 
   const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertService, {
     successMessage: "Service saved.",
-    onSuccess: () => setEditing(null),
+    onSuccess: () => {
+      setEditing(null);
+      router.refresh();
+    },
   });
 
   const handleDelete = (id: string) => {
@@ -36,11 +43,21 @@ export function ServicesManager({
         const result = await deleteService(id);
         if (result.success) {
           if (editing?.id === id) setEditing(null);
+          router.refresh();
         } else {
           setDeleteError(result.error);
         }
       })();
     });
+  };
+
+  const handleSave = (formData: FormData) => {
+    if (formRef.current?.querySelector('[data-kos-uploading="true"]')) {
+      setUploadError("Wait for the image upload to finish before saving.");
+      return;
+    }
+    setUploadError(null);
+    run(formData);
   };
 
   return (
@@ -54,6 +71,7 @@ export function ServicesManager({
             onClick={() => {
               clearFeedback();
               setDeleteError(null);
+              setUploadError(null);
               setEditing({} as Service);
             }}
           >
@@ -64,10 +82,10 @@ export function ServicesManager({
       />
 
       {loadError && <AdminFeedback error={loadError} className="mb-4" />}
-      <AdminFeedback message={message} error={error ?? deleteError} className="mb-4" />
+      <AdminFeedback message={message} error={error ?? deleteError ?? uploadError} className="mb-4" />
 
       {editing && (
-        <form action={run} className="mb-6 rounded-2xl border border-gold/30 bg-surface/70 p-6">
+        <form ref={formRef} action={handleSave} className="mb-6 rounded-2xl border border-gold/30 bg-surface/70 p-6">
           {editing.id && <input type="hidden" name="id" value={editing.id} />}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title">
