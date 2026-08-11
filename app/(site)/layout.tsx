@@ -3,10 +3,9 @@ import { Footer } from "@/components/layout/Footer";
 import { getSiteSettings, getContentSections, getServices } from "@/lib/queries/public";
 import { toSiteConfig } from "@/lib/site-config";
 import { getSection, mergeContentSections } from "@/lib/cms";
-import { SITE_REVALIDATE_SECONDS } from "@/lib/cache/site";
 
-/** ISR marketing shell — refreshed on a timer and via admin revalidateTag. */
-export const revalidate = SITE_REVALIDATE_SECONDS;
+/** ISR window in seconds — must be a literal for Next segment config. Keep in sync with SITE_REVALIDATE_SECONDS. */
+export const revalidate = 300;
 
 export default async function SiteLayout({
   children,

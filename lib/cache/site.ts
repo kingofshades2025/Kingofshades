@@ -1,6 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
-/** Shared ISR window for marketing shell + public query cache. */
+/** Shared ISR window for marketing shell + public query cache (seconds). */
 export const SITE_REVALIDATE_SECONDS = 300;
 
 export const SITE_CACHE_TAGS = {
