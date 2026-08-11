@@ -108,14 +108,11 @@ export function Footer({
             © {new Date().getFullYear()} {site.name}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="#" className="transition-colors hover:text-gold">
+            <Link href="/privacy" className="transition-colors hover:text-gold">
               Privacy Policy
             </Link>
-            <Link href="#" className="transition-colors hover:text-gold">
+            <Link href="/terms" className="transition-colors hover:text-gold">
               Terms of Service
-            </Link>
-            <Link href="/admin/login" className="transition-colors hover:text-gold">
-              Admin
             </Link>
           </div>
         </Container>

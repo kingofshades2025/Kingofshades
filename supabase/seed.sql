@@ -4,11 +4,11 @@
 insert into public.site_settings (business_name, phone, email, address_line1, address_line2, social_links, business_hours)
 values (
   'King of Shades',
-  '(555) 846-2337',
+  '(609) 839-1584',
   'kingofshades2025@gmail.com',
-  '1420 Chrome Avenue, Bay 7',
-  'Metropolis, NJ 90210',
-  '[{"label":"Instagram","href":"https://www.instagram.com/kingofshades609/","icon":"instagram"},{"label":"Facebook","href":"#","icon":"facebook"}]'::jsonb,
+  'Brigantine, NJ',
+  'Serving Atlantic County & South Jersey',
+  '[{"label":"Instagram","href":"https://www.instagram.com/kingofshades609/","icon":"instagram"}]'::jsonb,
   '[{"day":"Monday – Friday","time":"8:00 AM – 6:00 PM"},{"day":"Saturday","time":"9:00 AM – 4:00 PM"},{"day":"Sunday","time":"Closed"}]'::jsonb
 )
 on conflict do nothing;

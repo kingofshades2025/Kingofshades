@@ -2,15 +2,15 @@ export const site = {
   name: "King of Shades",
   shortName: "KOS",
   tagline: "Premium Window Tinting & Custom Vinyl",
-  phone: "(555) 846-2337",
-  phoneHref: "tel:+15558462337",
+  phone: "(609) 839-1584",
+  phoneHref: "tel:+16098391584",
   email: "kingofshades2025@gmail.com",
   emailHref: "mailto:kingofshades2025@gmail.com",
   domain: "kingofshadesnj.com",
   url: "https://kingofshadesnj.com",
   address: {
-    line1: "1420 Chrome Avenue, Bay 7",
-    line2: "Metropolis, CA 90210",
+    line1: "Brigantine, NJ",
+    line2: "Serving Atlantic County & South Jersey",
   },
   hours: [
     { day: "Monday – Friday", time: "8:00 AM – 6:00 PM" },
@@ -18,10 +18,11 @@ export const site = {
     { day: "Sunday", time: "Closed" },
   ],
   socials: [
-    { label: "Instagram", href: "https://www.instagram.com/kingofshades609/", icon: "instagram" },
-    { label: "Facebook", href: "#", icon: "facebook" },
-    { label: "TikTok", href: "#", icon: "tiktok" },
-    { label: "YouTube", href: "#", icon: "youtube" },
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/kingofshades609/",
+      icon: "instagram",
+    },
   ],
 } as const;
 

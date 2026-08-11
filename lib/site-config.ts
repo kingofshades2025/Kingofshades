@@ -75,6 +75,6 @@ export function toSiteConfig(settings?: SiteSettings | null): SiteConfig {
       settings?.social_links?.length
         ? settings.social_links
         : [...staticSite.socials],
-    ),
+    ).filter((link) => isConfiguredHref(link.href)),
   };
 }
