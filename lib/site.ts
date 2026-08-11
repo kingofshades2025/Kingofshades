@@ -18,7 +18,7 @@ export const site = {
     { day: "Sunday", time: "Closed" },
   ],
   socials: [
-    { label: "Instagram", href: "#", icon: "instagram" },
+    { label: "Instagram", href: "https://www.instagram.com/kingofshades609/", icon: "instagram" },
     { label: "Facebook", href: "#", icon: "facebook" },
     { label: "TikTok", href: "#", icon: "tiktok" },
     { label: "YouTube", href: "#", icon: "youtube" },

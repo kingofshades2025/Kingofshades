@@ -4,7 +4,7 @@ import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { SocialIcon } from "@/components/ui/SocialIcon";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 import { getContentSections, getSiteSettings } from "@/lib/queries/public";
 import { getSection, sectionMeta } from "@/lib/cms";
 import { toSiteConfig } from "@/lib/site-config";
@@ -112,18 +112,11 @@ export default async function ContactPage() {
 
               <Card className="p-6">
                 <h3 className="font-display text-lg font-semibold text-white">Follow us</h3>
-                <div className="mt-4 flex gap-2.5">
-                  {site.socials.map((s) => (
-                    <a
-                      key={s.label}
-                      href={s.href}
-                      aria-label={s.label}
-                      className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-charcoal-light text-snow/70 transition-colors hover:border-gold/40 hover:text-gold"
-                    >
-                      <SocialIcon name={s.icon} />
-                    </a>
-                  ))}
-                </div>
+                <SocialLinks
+                  socials={site.socials}
+                  className="mt-4"
+                  itemClassName="h-11 w-11"
+                />
               </Card>
             </div>
           </div>
