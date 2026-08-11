@@ -70,6 +70,7 @@ export function BookingWizard({
   const [appointmentNumber, setAppointmentNumber] = useState<string | null>(null);
   const [submitWarning, setSubmitWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const setDetail = (key: string, value: string) => {
@@ -85,6 +86,12 @@ export function BookingWizard({
       })
     : null;
   const windowCount = Number(details["Number of windows"] || 0) || undefined;
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setStepError(null);
+    setError(null);
+  }, [step]);
 
   useEffect(() => {
     if (!dateIso) {
@@ -115,16 +122,69 @@ export function BookingWizard({
     }).then(setPricing);
   }, [service, tintType, windowCount, step, selectedService?.title]);
 
+  function validateStep(current: number): string | null {
+    if (current === 0) {
+      if (!service) return "Select a service to continue.";
+      if (service === "custom-quote") return "Use the quote form for custom projects.";
+      return null;
+    }
+    if (current === 1) {
+      if (formKind === "automotive" && !details["Vehicle make"]?.trim()) {
+        return "Enter your vehicle make so we can prepare an accurate quote.";
+      }
+      if (
+        (formKind === "residential" || formKind === "commercial") &&
+        !details["Property type"]?.trim()
+      ) {
+        return "Select a property type to continue.";
+      }
+      if (formKind === "decals" && !details["Project type"]?.trim()) {
+        return "Select a project type to continue.";
+      }
+      return null;
+    }
+    if (current === 2) {
+      if (!dateIso || !slot) return "Choose both a date and an available time.";
+      return null;
+    }
+    if (current === 3) {
+      if (!name.trim()) return "Enter your full name.";
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return "Enter a valid email address.";
+      }
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 10) return "Enter a valid 10-digit phone number.";
+      if (
+        (formKind === "residential" || formKind === "commercial") &&
+        !address.trim()
+      ) {
+        return "Enter the property address.";
+      }
+      return null;
+    }
+    return null;
+  }
+
   const canNext =
-    (step === 0 && !!service) ||
+    (step === 0 && !!service && service !== "custom-quote") ||
+    (step === 1 && !validateStep(1)) ||
     (step === 2 && dateIso !== null && slot !== null) ||
-    (step === 3 && name.trim() && email.trim()) ||
-    step === 1 ||
+    (step === 3 && !validateStep(3)) ||
     step === 4;
 
   const handleContinue = () => {
-    if (step === 0 && service === "custom-quote") return;
-    if (canNext) setStep((s) => s + 1);
+    const message = validateStep(step);
+    if (message) {
+      setStepError(message);
+      return;
+    }
+    setStepError(null);
+    setStep((s) => Math.min(steps.length - 1, s + 1));
+  };
+
+  const handleSelectService = (id: string) => {
+    setService(id);
+    setStepError(null);
   };
 
   const handleConfirmBooking = () => {
@@ -200,7 +260,7 @@ export function BookingWizard({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <ol className="mb-10 flex items-center">
+      <ol className="mb-4 flex items-center sm:mb-8">
         {steps.map((label, i) => (
           <li key={label} className="flex flex-1 items-center last:flex-none">
             <div className="flex flex-col items-center gap-2">
@@ -224,6 +284,10 @@ export function BookingWizard({
           </li>
         ))}
       </ol>
+      <p className="mb-8 text-center text-sm text-mist sm:hidden">
+        Step {step + 1} of {steps.length}:{" "}
+        <span className="font-medium text-snow">{steps[step]}</span>
+      </p>
 
       <div className="rounded-3xl border border-line bg-surface/70 p-6 sm:p-8">
         {step === 0 && (
@@ -238,9 +302,16 @@ export function BookingWizard({
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => setService(s.id)}
+                    onClick={() => handleSelectService(s.id)}
+                    onDoubleClick={() => {
+                      handleSelectService(s.id);
+                      if (s.id !== "custom-quote") {
+                        setStepError(null);
+                        setStep(1);
+                      }
+                    }}
                     className={cn(
-                      "flex items-center gap-4 rounded-2xl border p-5 text-left transition-all",
+                      "flex min-h-[5.5rem] items-center gap-4 rounded-2xl border p-5 text-left transition-all",
                       isActive ? "border-gold/60 bg-gold/10 shadow-glow" : "border-line bg-charcoal-light hover:border-gold/30",
                     )}
                   >
@@ -326,7 +397,13 @@ export function BookingWizard({
             <h2 className="font-display text-2xl font-bold text-white">Pick a date & time</h2>
             <p className="mt-1 text-sm text-mist">Real-time availability — no double booking.</p>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
-              <BookingCalendar selectedIso={dateIso} onSelect={setDateIso} />
+              <BookingCalendar
+                selectedIso={dateIso}
+                onSelect={(iso) => {
+                  setDateIso(iso);
+                  setStepError(null);
+                }}
+              />
               <div>
                 <p className="mb-3 flex items-center gap-2 text-sm font-medium text-snow/80">
                   <CalendarDays className="h-4 w-4 text-gold" />
@@ -341,7 +418,20 @@ export function BookingWizard({
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {availableSlots.map((t) => (
-                      <button key={t} type="button" onClick={() => setSlot(t)} className={cn("rounded-xl border py-2.5 text-sm font-medium transition-colors", slot === t ? "border-gold bg-gold/15 text-gold" : "border-line bg-charcoal-light text-snow/80 hover:border-gold/30")}>
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => {
+                          setSlot(t);
+                          setStepError(null);
+                        }}
+                        className={cn(
+                          "min-h-11 rounded-xl border py-2.5 text-sm font-medium transition-colors",
+                          slot === t
+                            ? "border-gold bg-gold/15 text-gold"
+                            : "border-line bg-charcoal-light text-snow/80 hover:border-gold/30",
+                        )}
+                      >
                         {t}
                       </button>
                     ))}
@@ -360,14 +450,55 @@ export function BookingWizard({
         {step === 3 && (
           <div>
             <h2 className="font-display text-2xl font-bold text-white">Your information</h2>
+            <p className="mt-1 text-sm text-mist">We&apos;ll use this to send your quote and confirm timing.</p>
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <Field label="Full name"><Input placeholder="Jordan Carter" value={name} onChange={(e) => setName(e.target.value)} required /></Field>
-              <Field label="Phone number"><Input type="tel" placeholder="(555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
-              <Field label="Email address" className="sm:col-span-2"><Input type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></Field>
+              <Field label="Full name">
+                <Input
+                  placeholder="Jordan Carter"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  required
+                />
+              </Field>
+              <Field label="Phone number">
+                <Input
+                  type="tel"
+                  placeholder="(609) 555-0123"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                  required
+                />
+              </Field>
+              <Field label="Email address" className="sm:col-span-2">
+                <Input
+                  type="email"
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </Field>
               {(formKind === "residential" || formKind === "commercial") && (
-                <Field label="Property address" className="sm:col-span-2"><Input placeholder="Street address" value={address} onChange={(e) => setAddress(e.target.value)} /></Field>
+                <Field label="Property address" className="sm:col-span-2">
+                  <Input
+                    placeholder="Street address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    autoComplete="street-address"
+                    required
+                  />
+                </Field>
               )}
-              <Field label="Notes (optional)" className="sm:col-span-2"><Textarea placeholder="Anything else we should know?" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+              <Field label="Notes (optional)" className="sm:col-span-2">
+                <Textarea
+                  placeholder="Anything else we should know?"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </Field>
             </div>
           </div>
         )}
@@ -378,23 +509,84 @@ export function BookingWizard({
             <p className="mt-1 text-sm text-mist">
               Submit your preferred date and details. We&apos;ll verify everything and email you a quote.
             </p>
-            <div className="mt-6 rounded-2xl border border-line bg-charcoal-light p-5">
-              <div className="flex items-center justify-between border-b border-line pb-4">
-                <div>
-                  <p className="font-semibold text-white">{selectedService?.title}</p>
-                  <p className="text-sm text-mist">{dateIso && formatDateLabel(dateIso)} · {slot}</p>
+            <div className="mt-6 space-y-4">
+              <div className="rounded-2xl border border-line bg-charcoal-light p-5">
+                <div className="flex items-center justify-between border-b border-line pb-4">
+                  <div>
+                    <p className="font-semibold text-white">{selectedService?.title}</p>
+                    <p className="text-sm text-mist">
+                      {dateIso && formatDateLabel(dateIso)} · {slot}
+                    </p>
+                  </div>
+                  <Badge tone="gold">
+                    {pricing?.formatted.total ?? selectedService?.from ?? "Estimate"}
+                  </Badge>
                 </div>
-                <Badge tone="gold">{pricing?.formatted.total ?? selectedService?.from ?? "Estimate"}</Badge>
+
+                <dl className="mt-4 space-y-2.5 text-sm">
+                  {[
+                    formKind === "automotive" &&
+                      details["Vehicle make"] && {
+                        label: "Vehicle",
+                        value: [details.Year, details["Vehicle make"], details["Vehicle model"]]
+                          .filter(Boolean)
+                          .join(" "),
+                      },
+                    formKind === "automotive" &&
+                      details["Number of windows"] && {
+                        label: "Windows",
+                        value: details["Number of windows"],
+                      },
+                    (formKind === "automotive" ||
+                      formKind === "residential" ||
+                      formKind === "commercial") && {
+                      label: "Film",
+                      value: `${tint}${formKind === "automotive" ? ` · ${TINT_TYPES.find((t) => t.id === tintType)?.label ?? tintType}` : ""}`,
+                    },
+                    formKind === "decals" &&
+                      details["Project type"] && {
+                        label: "Project",
+                        value: details["Project type"],
+                      },
+                    (formKind === "residential" || formKind === "commercial") &&
+                      details["Property type"] && {
+                        label: "Property",
+                        value: details["Property type"],
+                      },
+                    { label: "Name", value: name },
+                    { label: "Email", value: email },
+                    { label: "Phone", value: phone },
+                    address.trim() && { label: "Address", value: address },
+                    photoUrls.length > 0 && {
+                      label: "Photos",
+                      value: `${photoUrls.length} uploaded`,
+                    },
+                  ]
+                    .filter(Boolean)
+                    .map((row) => {
+                      const item = row as { label: string; value: string };
+                      return (
+                        <div key={item.label} className="flex justify-between gap-4">
+                          <dt className="text-mist">{item.label}</dt>
+                          <dd className="max-w-[60%] text-right text-snow">{item.value}</dd>
+                        </div>
+                      );
+                    })}
+                </dl>
+
+                {pricing && (
+                  <>
+                    <p className="mt-5 text-xs font-medium uppercase tracking-wider text-mist">
+                      Starting estimate
+                    </p>
+                    <PriceBreakdown lines={pricing.breakdown} className="mt-2" />
+                    <p className="mt-4 text-xs text-mist">
+                      Final pricing may change after we review your vehicle and confirm the work
+                      scope.
+                    </p>
+                  </>
+                )}
               </div>
-              {pricing && (
-                <>
-                  <p className="mt-4 text-xs font-medium uppercase tracking-wider text-mist">Starting estimate</p>
-                  <PriceBreakdown lines={pricing.breakdown} className="mt-2" />
-                  <p className="mt-4 text-xs text-mist">
-                    Final pricing may change after we review your vehicle and confirm the work scope.
-                  </p>
-                </>
-              )}
             </div>
 
             {error && (
@@ -404,24 +596,50 @@ export function BookingWizard({
               </div>
             )}
 
-            <Button size="lg" className="mt-6 w-full" type="button" disabled={isPending} onClick={handleConfirmBooking}>
+            <Button
+              size="lg"
+              className="mt-6 w-full"
+              type="button"
+              disabled={isPending}
+              onClick={handleConfirmBooking}
+            >
               {isPending ? "Submitting…" : "Submit booking request"}
             </Button>
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between">
-          <Button variant="ghost" type="button" onClick={() => setStep((s) => Math.max(0, s - 1))} className={cn(step === 0 && "invisible")}>
+        {stepError && (
+          <div className="mt-6 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {stepError}
+          </div>
+        )}
+
+        <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6">
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            className={cn(step === 0 && "invisible")}
+          >
             <ChevronLeft className="h-4 w-4" />
             Back
           </Button>
+          <p className="hidden text-xs text-mist sm:block">
+            Step {step + 1} of {steps.length}
+          </p>
           {step < steps.length - 1 ? (
-            <Button type="button" onClick={handleContinue} variant={canNext && service !== "custom-quote" ? "primary" : "subtle"} disabled={!canNext || service === "custom-quote"}>
+            <Button
+              type="button"
+              onClick={handleContinue}
+              variant={canNext ? "primary" : "subtle"}
+              disabled={service === "custom-quote" && step === 0}
+            >
               Continue
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
-            <span className="text-sm text-mist">Step {step + 1} of {steps.length}</span>
+            <span className="text-sm text-mist sm:invisible">Review</span>
           )}
         </div>
       </div>

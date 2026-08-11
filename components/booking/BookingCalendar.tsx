@@ -39,8 +39,11 @@ export function BookingCalendar({
   });
 
   const todayIso = toDateIso(now.getFullYear(), now.getMonth(), now.getDate());
+  const isCurrentMonth =
+    viewYear === now.getFullYear() && viewMonth === now.getMonth();
 
   function shiftMonth(delta: number) {
+    if (delta < 0 && isCurrentMonth) return;
     const d = new Date(viewYear, viewMonth + delta, 1);
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
@@ -57,7 +60,14 @@ export function BookingCalendar({
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-line text-mist hover:text-gold"
+          disabled={isCurrentMonth}
+          aria-label="Previous month"
+          className={cn(
+            "grid h-10 w-10 place-items-center rounded-lg border border-line text-mist transition-colors",
+            isCurrentMonth
+              ? "cursor-not-allowed opacity-40"
+              : "hover:border-gold/40 hover:text-gold",
+          )}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -65,7 +75,8 @@ export function BookingCalendar({
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-line text-mist hover:text-gold"
+          aria-label="Next month"
+          className="grid h-10 w-10 place-items-center rounded-lg border border-line text-mist transition-colors hover:border-gold/40 hover:text-gold"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -94,8 +105,10 @@ export function BookingCalendar({
               type="button"
               disabled={disabled}
               onClick={() => onSelect(iso)}
+              aria-label={iso}
+              aria-pressed={isSelected}
               className={cn(
-                "aspect-square rounded-lg text-sm transition-colors",
+                "flex min-h-10 items-center justify-center rounded-lg text-sm transition-colors",
                 disabled && "cursor-not-allowed text-mist/30",
                 !disabled && !isSelected && "text-snow hover:bg-gold/10 hover:text-gold",
                 isSelected && "bg-gold font-semibold text-ink",

@@ -21,11 +21,12 @@ export default async function BookingPage() {
   return (
     <>
       <PageHeader
+        size="compact"
         eyebrow={String(sectionMeta(sections, "page_booking", "eyebrow", ""))}
         title={page.title ?? ""}
         description={page.body ?? ""}
       />
-      <section className="py-16 sm:py-20">
+      <section className="py-10 sm:py-14">
         <Container>
           <BookingWizard services={services} />
         </Container>
