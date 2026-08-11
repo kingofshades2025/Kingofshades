@@ -18,14 +18,19 @@ export function BeforeAfter({
   afterImage?: string | null;
 }) {
   const [pos, setPos] = useState(50);
+  const [beforeFailed, setBeforeFailed] = useState(false);
+  const [afterFailed, setAfterFailed] = useState(false);
 
-  const afterStyle = afterImage
+  const showAfter = Boolean(afterImage) && !afterFailed;
+  const showBefore = Boolean(beforeImage) && !beforeFailed;
+
+  const afterStyle = showAfter
     ? undefined
     : {
         background: `radial-gradient(120% 120% at 80% 10%, hsla(${hue},65%,45%,0.30) 0%, transparent 55%), linear-gradient(135deg, hsl(${hue},28%,11%) 0%, #070707 100%)`,
       };
 
-  const beforeStyle = beforeImage
+  const beforeStyle = showBefore
     ? undefined
     : {
         background:
@@ -40,9 +45,14 @@ export function BeforeAfter({
       )}
     >
       <div className="absolute inset-0" style={afterStyle}>
-        {afterImage ? (
+        {showAfter ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={afterImage} alt="" className="h-full w-full object-cover" />
+          <img
+            src={afterImage!}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => setAfterFailed(true)}
+          />
         ) : (
           <div className="bg-grid absolute inset-0 opacity-30" />
         )}
@@ -55,9 +65,14 @@ export function BeforeAfter({
         className="absolute inset-0"
         style={{ clipPath: `inset(0 ${100 - pos}% 0 0)`, ...beforeStyle }}
       >
-        {beforeImage ? (
+        {showBefore ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={beforeImage} alt="" className="h-full w-full object-cover" />
+          <img
+            src={beforeImage!}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => setBeforeFailed(true)}
+          />
         ) : (
           <div
             className="absolute inset-0 opacity-40"

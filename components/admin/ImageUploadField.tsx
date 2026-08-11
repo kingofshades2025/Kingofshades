@@ -113,6 +113,7 @@ export function ImageUploadField({
   return (
     <Field label={label} hint={hint} className={className}>
       <input type="hidden" name={name} value={url} />
+      <div data-kos-uploading={uploading ? "true" : "false"} className="contents">
       <input
         ref={inputRef}
         type="file"
@@ -202,6 +203,7 @@ export function ImageUploadField({
       </div>
 
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      </div>
     </Field>
   );
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function TintGlass({
@@ -19,34 +22,35 @@ export function TintGlass({
   intensity?: number;
   imageUrl?: string | null;
 }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(imageUrl) && !failed;
+  const gradientStyle = {
+    background: `
+      radial-gradient(120% 120% at 80% 0%, hsla(${hue}, 70%, 55%, ${0.22 * intensity}) 0%, transparent 55%),
+      radial-gradient(120% 120% at 0% 100%, hsla(${hue + 30}, 60%, 40%, ${0.18 * intensity}) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(${hue}, 30%, 12%) 0%, #0d0d0d 55%, #060606 100%)
+    `,
+  };
+
   return (
     <div
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-line",
         className,
       )}
-      style={
-        imageUrl
-          ? undefined
-          : {
-              background: `
-          radial-gradient(120% 120% at 80% 0%, hsla(${hue}, 70%, 55%, ${0.22 * intensity}) 0%, transparent 55%),
-          radial-gradient(120% 120% at 0% 100%, hsla(${hue + 30}, 60%, 40%, ${0.18 * intensity}) 0%, transparent 50%),
-          linear-gradient(135deg, hsl(${hue}, 30%, 12%) 0%, #0d0d0d 55%, #060606 100%)
-        `,
-            }
-      }
+      style={showImage ? undefined : gradientStyle}
     >
-      {imageUrl && (
+      {showImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl}
+          src={imageUrl!}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailed(true)}
         />
       )}
 
-      {!imageUrl && (
+      {!showImage && (
         <>
           <div
             className="pointer-events-none absolute inset-0 opacity-60"
@@ -60,7 +64,7 @@ export function TintGlass({
         </>
       )}
 
-      {imageUrl && (
+      {showImage && (
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
       )}
 

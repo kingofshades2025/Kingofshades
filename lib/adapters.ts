@@ -1,5 +1,6 @@
 import type { Service as DbService, GalleryItem as DbGalleryItem, Testimonial as DbTestimonial } from "@/lib/types/database";
 import type { Service as LegacyService, GalleryItem as LegacyGalleryItem, Testimonial as LegacyTestimonial } from "@/lib/data";
+import { resolveServiceFormKind } from "@/lib/booking/service-form";
 
 export function toLegacyService(s: DbService): LegacyService {
   return {
@@ -7,10 +8,14 @@ export function toLegacyService(s: DbService): LegacyService {
     title: s.title,
     tagline: s.tagline ?? "",
     description: s.description ?? "",
-    benefits: s.benefits,
+    benefits: Array.isArray(s.benefits) ? s.benefits : [],
     startingAt: s.price_label ?? "Quote",
-    features: s.features,
-    accent: (s.accent ?? s.category) as LegacyService["accent"],
+    features: Array.isArray(s.features) ? s.features : [],
+    accent: resolveServiceFormKind({
+      id: s.slug,
+      accent: s.accent,
+      category: s.category,
+    }),
     featuredImageUrl: s.featured_image_url ?? undefined,
     detailImageUrl: s.detail_image_url ?? undefined,
     finishImageUrl: s.finish_image_url ?? undefined,

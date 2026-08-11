@@ -67,7 +67,12 @@ export default async function HomePage() {
   const heroTitle = getSection(sections, "hero_title").title ?? "";
   const heroHighlight = sectionMeta(sections, "hero_title", "highlight", "Window Tinting");
   const heroSubtitle = getSection(sections, "hero_subtitle").body ?? "";
-  const aboutBullets = sectionMeta<string[]>(sections, "about_section", "bullets", []);
+  const aboutBulletsRaw = sectionMeta<string[]>(sections, "about_section", "bullets", []);
+  const aboutBullets = Array.isArray(aboutBulletsRaw)
+    ? aboutBulletsRaw.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const heroImageUrl = metaImage(sections, "hero_visual", "image_url");
+  const aboutImageUrl = metaImage(sections, "about_section", "image_url");
 
   return (
     <>
@@ -131,11 +136,11 @@ export default async function HomePage() {
                 hue={210}
                 className="aspect-[4/3] shadow-2xl"
                 badge={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))}
-                label={heroVisual.title ?? ""}
-                sublabel={heroVisual.body ?? ""}
-                imageUrl={metaImage(sections, "hero_visual", "image_url")}
+                label={heroImageUrl ? undefined : (heroVisual.title ?? "")}
+                sublabel={heroImageUrl ? undefined : (heroVisual.body ?? "")}
+                imageUrl={heroImageUrl}
               />
-              <Card className="absolute -bottom-6 -left-6 hidden w-56 p-4 sm:block">
+              <Card className="absolute -bottom-6 -left-6 hidden w-56 p-4 lg:block">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-lg bg-gold/15 text-gold">
                     <Snowflake className="h-5 w-5" />
@@ -146,7 +151,7 @@ export default async function HomePage() {
                   </div>
                 </div>
               </Card>
-              <Card className="absolute -right-4 top-8 hidden w-44 p-4 sm:block">
+              <Card className="absolute -right-4 top-8 hidden w-44 p-4 lg:block">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-lg bg-gold/15 text-gold">
                     <ShieldCheck className="h-5 w-5" />
@@ -187,9 +192,9 @@ export default async function HomePage() {
             <TintGlass
               hue={280}
               className="aspect-[5/4]"
-              label={String(sectionMeta(sections, "about_section", "visual_label", ""))}
-              sublabel={String(sectionMeta(sections, "about_section", "visual_sublabel", ""))}
-              imageUrl={metaImage(sections, "about_section", "image_url")}
+              label={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_label", ""))}
+              sublabel={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_sublabel", ""))}
+              imageUrl={aboutImageUrl}
             />
             <div className="absolute -bottom-5 right-6 rounded-2xl border border-gold/30 bg-ink/90 px-5 py-4 backdrop-blur">
               <p className="font-display text-3xl font-bold text-gradient-gold">
@@ -326,7 +331,13 @@ export default async function HomePage() {
               <div className="mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-gold-light to-gold-dark font-display text-sm font-bold text-ink">
-                    {t.name.split(" ").map((n) => n[0]).join("")}
+                    {t.name
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .map((n) => n[0] ?? "")
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase() || "?"}
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-white">{t.name}</p>

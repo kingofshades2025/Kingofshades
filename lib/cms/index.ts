@@ -80,7 +80,8 @@ export function sectionItems<T>(
   fallback: T[],
 ): T[] {
   const items = sectionMeta<unknown>(sections, key, itemKey, fallback);
-  return Array.isArray(items) ? (items as T[]) : fallback;
+  if (!Array.isArray(items) || items.length === 0) return fallback;
+  return items as T[];
 }
 
 export function getStats(sections: Record<string, ContentSection>): CmsStat[] {

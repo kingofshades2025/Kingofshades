@@ -13,8 +13,9 @@ const icons = {
 } as const;
 
 export function ServiceCard({ service }: { service: Service }) {
-  const Icon = icons[service.accent];
-  const hue = categoryHueForAccent[service.accent];
+  const accent = service.accent in icons ? service.accent : "automotive";
+  const Icon = icons[accent];
+  const hue = categoryHueForAccent[accent] ?? categoryHueForAccent.automotive;
 
   return (
     <Card hover className="flex flex-col overflow-hidden">

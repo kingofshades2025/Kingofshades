@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import type { GalleryItem } from "@/lib/types/database";
 import { galleryCategories } from "@/lib/data";
@@ -12,23 +13,31 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 
 export function GalleryManager({ items }: { items: GalleryItem[] }) {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [editing, setEditing] = useState<GalleryItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const { run, isPending, message, error, clearFeedback } = useAdminAction(upsertGalleryItem, {
     successMessage: editing?.id ? "Gallery item updated." : "Gallery item added.",
-    onSuccess: () => setEditing(null),
+    onSuccess: () => {
+      setEditing(null);
+      router.refresh();
+    },
   });
 
   const startAdd = () => {
     clearFeedback();
     setDeleteError(null);
+    setUploadError(null);
     setEditing({} as GalleryItem);
   };
 
   const startEdit = (item: GalleryItem) => {
     clearFeedback();
     setDeleteError(null);
+    setUploadError(null);
     setEditing(item);
   };
 
@@ -37,7 +46,19 @@ export function GalleryManager({ items }: { items: GalleryItem[] }) {
     setDeleteError(null);
     const result = await deleteGalleryItem(id);
     if (!result.success) setDeleteError(result.error);
-    else if (editing?.id === id) setEditing(null);
+    else {
+      if (editing?.id === id) setEditing(null);
+      router.refresh();
+    }
+  };
+
+  const handleSave = (formData: FormData) => {
+    if (formRef.current?.querySelector('[data-kos-uploading="true"]')) {
+      setUploadError("Wait for the image upload to finish before saving.");
+      return;
+    }
+    setUploadError(null);
+    run(formData);
   };
 
   return (
@@ -50,11 +71,12 @@ export function GalleryManager({ items }: { items: GalleryItem[] }) {
         }
       />
 
-      <AdminFeedback message={message} error={error ?? deleteError} className="mb-4" />
+      <AdminFeedback message={message} error={error ?? deleteError ?? uploadError} className="mb-4" />
 
       {editing && (
         <form
-          action={run}
+          ref={formRef}
+          action={handleSave}
           key={editing.id ?? "new"}
           className="mb-6 grid gap-4 rounded-2xl border border-gold/30 bg-surface/70 p-6 sm:grid-cols-2"
         >
