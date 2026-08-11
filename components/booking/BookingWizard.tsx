@@ -21,6 +21,11 @@ import { bookingServices as defaultBookingServices, tintPercentages } from "@/li
 import { CUSTOM_QUOTE_SERVICE, TINT_TYPES } from "@/lib/booking/defaults";
 import { resolveServiceFormKind } from "@/lib/booking/service-form";
 import { formatDateLabel } from "@/lib/booking/availability";
+import {
+  clearBookingDraft,
+  loadBookingDraft,
+  saveBookingDraft,
+} from "@/lib/booking/draft";
 import { BookingCalendar } from "@/components/booking/BookingCalendar";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { VehicleFields } from "@/components/booking/VehicleFields";
@@ -71,6 +76,8 @@ export function BookingWizard({
   const [submitWarning, setSubmitWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const setDetail = (key: string, value: string) => {
@@ -88,28 +95,94 @@ export function BookingWizard({
   const windowCount = Number(details["Number of windows"] || 0) || undefined;
 
   useEffect(() => {
+    const draft = loadBookingDraft();
+    if (draft) {
+      setStep(Math.min(Math.max(draft.step, 0), steps.length - 1));
+      setService(draft.service);
+      setTint(draft.tint || tintPercentages[2]);
+      setTintType(draft.tintType || TINT_TYPES[1].id);
+      setDateIso(draft.dateIso);
+      setSlot(draft.slot);
+      setDetails(draft.details ?? {});
+      setPhotoUrls(draft.photoUrls ?? []);
+      setName(draft.name ?? "");
+      setPhone(draft.phone ?? "");
+      setEmail(draft.email ?? "");
+      setAddress(draft.address ?? "");
+      setNotes(draft.notes ?? "");
+      setDraftRestored(true);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || submitted) return;
+    saveBookingDraft({
+      step,
+      service,
+      tint,
+      tintType,
+      dateIso,
+      slot,
+      details,
+      photoUrls,
+      name,
+      phone,
+      email,
+      address,
+      notes,
+    });
+  }, [
+    hydrated,
+    step,
+    service,
+    tint,
+    tintType,
+    dateIso,
+    slot,
+    details,
+    photoUrls,
+    name,
+    phone,
+    email,
+    address,
+    notes,
+    submitted,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStepError(null);
     setError(null);
-  }, [step]);
+  }, [step, hydrated]);
 
   useEffect(() => {
     if (!dateIso) {
       setAvailableSlots([]);
       return;
     }
+    let cancelled = false;
     setLoadingSlots(true);
-    setSlot(null);
     getAvailableTimeSlots(dateIso)
       .then((result) => {
+        if (cancelled) return;
         setAvailableSlots(result.slots);
+        setSlot((current) =>
+          current && result.slots.includes(current) ? current : null,
+        );
       })
       .catch(() => {
+        if (cancelled) return;
         setAvailableSlots([]);
+        setSlot(null);
       })
       .finally(() => {
-        setLoadingSlots(false);
+        if (!cancelled) setLoadingSlots(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [dateIso]);
 
   useEffect(() => {
@@ -211,6 +284,7 @@ export function BookingWizard({
       });
 
       if (result.success) {
+        clearBookingDraft();
         setAppointmentNumber(result.appointmentNumber ?? null);
         setSubmitted(true);
         setSubmitWarning(result.warning ?? null);
@@ -249,7 +323,10 @@ export function BookingWizard({
           <Button
             variant="outline"
             className="mt-8"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              clearBookingDraft();
+              window.location.reload();
+            }}
           >
             Submit another request
           </Button>
@@ -284,12 +361,43 @@ export function BookingWizard({
           </li>
         ))}
       </ol>
-      <p className="mb-8 text-center text-sm text-mist sm:hidden">
+      <p className="mb-4 text-center text-sm text-mist sm:hidden">
         Step {step + 1} of {steps.length}:{" "}
         <span className="font-medium text-snow">{steps[step]}</span>
       </p>
+      {draftRestored && (
+        <div className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-line bg-charcoal-light/80 px-4 py-3 text-sm text-mist">
+          <p>
+            Restored your in-progress booking.{" "}
+            <span className="text-snow/80">Continue where you left off.</span>
+          </p>
+          <button
+            type="button"
+            className="shrink-0 text-xs font-medium text-gold hover:underline"
+            onClick={() => {
+              clearBookingDraft();
+              setDraftRestored(false);
+              setStep(0);
+              setService(null);
+              setDateIso(null);
+              setSlot(null);
+              setDetails({});
+              setPhotoUrls([]);
+              setName("");
+              setPhone("");
+              setEmail("");
+              setAddress("");
+              setNotes("");
+              setTint(tintPercentages[2]);
+              setTintType(TINT_TYPES[1].id);
+            }}
+          >
+            Start over
+          </button>
+        </div>
+      )}
 
-      <div className="rounded-3xl border border-line bg-surface/70 p-6 sm:p-8">
+      <div className="rounded-3xl border border-line bg-surface/70 p-6 pb-28 sm:p-8 sm:pb-8">
         {step === 0 && (
           <div>
             <h2 className="font-display text-2xl font-bold text-white">Select a service</h2>
@@ -615,7 +723,7 @@ export function BookingWizard({
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6">
+        <div className="mt-8 hidden items-center justify-between gap-3 border-t border-line pt-6 sm:flex">
           <Button
             variant="ghost"
             type="button"
@@ -625,7 +733,7 @@ export function BookingWizard({
             <ChevronLeft className="h-4 w-4" />
             Back
           </Button>
-          <p className="hidden text-xs text-mist sm:block">
+          <p className="text-xs text-mist">
             Step {step + 1} of {steps.length}
           </p>
           {step < steps.length - 1 ? (
@@ -639,10 +747,39 @@ export function BookingWizard({
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
-            <span className="text-sm text-mist sm:invisible">Review</span>
+            <span className="text-sm text-mist invisible">Review</span>
           )}
         </div>
       </div>
+
+      {step < steps.length - 1 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/85 px-4 pt-3 backdrop-blur-xl supports-[backdrop-filter]:bg-ink/70 sm:hidden"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              className={cn("shrink-0", step === 0 && "invisible")}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              className="min-w-0 flex-1"
+              onClick={handleContinue}
+              variant={canNext ? "primary" : "subtle"}
+              disabled={service === "custom-quote" && step === 0}
+            >
+              Continue
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

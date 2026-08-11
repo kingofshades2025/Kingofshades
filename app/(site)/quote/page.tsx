@@ -1,14 +1,30 @@
+import type { Metadata } from "next";
+import { Container } from "@/components/ui/Container";
+import { PageHeader } from "@/components/sections/PageHeader";
 import { QuoteRequestForm } from "@/components/quotes/QuoteRequestForm";
+
+export const metadata: Metadata = {
+  title: "Request a Quote",
+  description:
+    "Request a free custom estimate for automotive, residential, commercial tint, or vinyl graphics.",
+};
 
 export default function QuotePage() {
   return (
-    <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <div className="mb-8 text-center">
-        <p className="text-sm font-medium uppercase tracking-wider text-gold">Custom Quote</p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">Request a free estimate</h1>
-        <p className="mt-3 text-mist">Every project is different. Tell us what you need and we&apos;ll send a tailored quote.</p>
-      </div>
-      <QuoteRequestForm />
-    </section>
+    <>
+      <PageHeader
+        size="compact"
+        eyebrow="Custom Quote"
+        title="Request a free estimate"
+        description="Every project is different. Tell us what you need and we'll send a tailored quote."
+      />
+      <section className="py-10 sm:py-14">
+        <Container>
+          <div className="mx-auto max-w-3xl">
+            <QuoteRequestForm />
+          </div>
+        </Container>
+      </section>
+    </>
   );
 }
