@@ -4,7 +4,6 @@ import {
   BadgeCheck,
   Gem,
   Clock,
-  Sparkles,
   Sun,
   Snowflake,
   Eye,
@@ -24,7 +23,6 @@ import { Section, SectionHeading } from "@/components/ui/Section";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Stars } from "@/components/ui/Stars";
 import { TintGlass } from "@/components/ui/TintGlass";
 import { ServiceCard } from "@/components/ServiceCard";
@@ -52,9 +50,8 @@ export default async function HomePage() {
   const processSection = getSection(sections, "process_section");
   const testimonialsSection = getSection(sections, "testimonials_section");
   const heroVisual = getSection(sections, "hero_visual");
-  const heroCardLeft = getSection(sections, "hero_card_left");
-  const heroCardRight = getSection(sections, "hero_card_right");
   const beforeAfterCards = getBeforeAfterCards(sections);
+  const heroImageUrl = metaImage(sections, "hero_visual", "image_url");
 
   const services = dbServices.length
     ? dbServices.slice(0, 4).map(toLegacyService)
@@ -63,7 +60,6 @@ export default async function HomePage() {
     ? dbTestimonials.map(toLegacyTestimonial)
     : mockTestimonials;
 
-  const heroBadge = getSection(sections, "hero_badge").title ?? "";
   const heroTitle = getSection(sections, "hero_title").title ?? "";
   const heroHighlight = sectionMeta(sections, "hero_title", "highlight", "Window Tinting");
   const heroSubtitle = getSection(sections, "hero_subtitle").body ?? "";
@@ -71,97 +67,77 @@ export default async function HomePage() {
   const aboutBullets = Array.isArray(aboutBulletsRaw)
     ? aboutBulletsRaw.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
-  const heroImageUrl = metaImage(sections, "hero_visual", "image_url");
   const aboutImageUrl = metaImage(sections, "about_section", "image_url");
 
   return (
     <>
-      <section className="relative overflow-hidden pt-28 pb-16 sm:pt-40 sm:pb-20 lg:pt-44">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(80% 60% at 70% 0%, rgba(212,175,55,0.12) 0%, transparent 60%), radial-gradient(60% 50% at 0% 30%, rgba(42,91,215,0.10) 0%, transparent 55%)",
-          }}
-        />
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-50" />
-        <Container className="relative">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="animate-fade-up">
-              <Badge tone="gold">
-                <Sparkles className="h-3.5 w-3.5" />
-                {heroBadge}
-              </Badge>
-              <h1 className="mt-5 font-display text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:mt-6 sm:text-5xl lg:text-6xl">
-                {heroTitle.includes(heroHighlight) ? (
-                  <>
-                    {heroTitle.split(heroHighlight)[0]}
-                    <span className="text-gradient-gold">{heroHighlight}</span>
-                    {heroTitle.split(heroHighlight)[1]}
-                  </>
-                ) : (
-                  heroTitle
-                )}
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-mist sm:mt-6 sm:text-lg">
-                {heroSubtitle}
-              </p>
-              <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center">
-                <Button href="/booking" size="lg" className="w-full sm:w-auto">
-                  Book Appointment
-                </Button>
-                <Button href="/contact" variant="outline" size="lg" className="w-full sm:w-auto">
-                  Get a Quote
-                </Button>
-                <Button href="/services" variant="ghost" size="lg" className="w-full sm:w-auto">
-                  View Services
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
+      <section className="relative flex min-h-[100svh] items-end overflow-hidden">
+        <div className="absolute inset-0">
+          {heroImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImageUrl}
+              alt={heroVisual.title || `${site.name} window tinting`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="h-full w-full"
+              aria-hidden
+              style={{
+                background: `
+                  radial-gradient(80% 60% at 70% 20%, rgba(212,175,55,0.18) 0%, transparent 55%),
+                  radial-gradient(50% 40% at 10% 80%, rgba(42,91,215,0.12) 0%, transparent 50%),
+                  linear-gradient(160deg, #121212 0%, #0a0a0a 55%, #050505 100%)
+                `,
+              }}
+            />
+          )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-ink/35" />
+          <div className="bg-grid pointer-events-none absolute inset-0 opacity-30" />
+        </div>
 
-              <dl className="mt-10 grid max-w-lg grid-cols-2 gap-4 sm:mt-12 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-6">
-                {stats.map((s) => (
-                  <div key={s.label}>
-                    <dt className="font-display text-xl font-bold text-white sm:text-2xl">{s.value}</dt>
-                    <dd className="mt-1 text-[0.65rem] uppercase tracking-wider text-mist sm:text-xs">
-                      {s.label}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-
-            <div className="relative animate-fade-up [animation-delay:120ms]">
-              <TintGlass
-                hue={210}
-                className="aspect-[4/3] shadow-2xl"
-                badge={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))}
-                label={heroImageUrl ? undefined : (heroVisual.title ?? "")}
-                sublabel={heroImageUrl ? undefined : (heroVisual.body ?? "")}
-                imageUrl={heroImageUrl}
-              />
-              <Card className="absolute -bottom-6 -left-6 hidden w-56 p-4 lg:block">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-gold/15 text-gold">
-                    <Snowflake className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{heroCardLeft.title}</p>
-                    <p className="text-xs text-mist">{heroCardLeft.body}</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="absolute -right-4 top-8 hidden w-44 p-4 lg:block">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-gold/15 text-gold">
-                    <ShieldCheck className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{heroCardRight.title}</p>
-                    <p className="text-xs text-mist">{heroCardRight.body}</p>
-                  </div>
-                </div>
-              </Card>
+        <Container className="relative w-full pb-14 pt-28 sm:pb-20 sm:pt-36">
+          <div className="max-w-2xl">
+            <p className="animate-fade-up font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              King of <span className="text-gradient-gold">Shades</span>
+            </p>
+            <p
+              className="animate-fade-up mt-2 text-[11px] font-medium uppercase tracking-[0.28em] text-gold/90 sm:text-xs"
+              style={{ animationDelay: "80ms" }}
+            >
+              Premium Tint Co.
+            </p>
+            <h1
+              className="animate-fade-up mt-6 font-display text-xl font-semibold leading-snug tracking-tight text-snow/95 sm:mt-8 sm:text-2xl lg:text-3xl"
+              style={{ animationDelay: "140ms" }}
+            >
+              {heroTitle.includes(heroHighlight) ? (
+                <>
+                  {heroTitle.split(heroHighlight)[0]}
+                  <span className="text-gradient-gold">{heroHighlight}</span>
+                  {heroTitle.split(heroHighlight)[1]}
+                </>
+              ) : (
+                heroTitle
+              )}
+            </h1>
+            <p
+              className="animate-fade-up mt-4 max-w-lg text-base leading-relaxed text-mist sm:text-lg"
+              style={{ animationDelay: "200ms" }}
+            >
+              {heroSubtitle}
+            </p>
+            <div
+              className="animate-fade-up mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+              style={{ animationDelay: "280ms" }}
+            >
+              <Button href="/booking" size="lg" className="w-full sm:w-auto">
+                Book Appointment
+              </Button>
+              <Button href="/contact" variant="outline" size="lg" className="w-full sm:w-auto">
+                Get a Quote
+              </Button>
             </div>
           </div>
         </Container>
@@ -183,6 +159,21 @@ export default async function HomePage() {
               </div>
             );
           })}
+        </Container>
+      </div>
+
+      <div className="border-b border-line bg-ink">
+        <Container className="py-10 sm:py-12">
+          <dl className="grid grid-cols-2 gap-8 sm:grid-cols-4 sm:gap-6">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center sm:text-left">
+                <dt className="font-display text-2xl font-bold text-white sm:text-3xl">{s.value}</dt>
+                <dd className="mt-1.5 text-[0.65rem] uppercase tracking-wider text-mist sm:text-xs">
+                  {s.label}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </Container>
       </div>
 
