@@ -71,7 +71,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative flex min-h-[58svh] items-center overflow-hidden sm:min-h-[62svh] lg:min-h-[560px]">
+      <section className="relative flex min-h-[78svh] items-center overflow-hidden sm:min-h-[82svh] lg:min-h-[720px]">
         <div className="absolute inset-0">
           {heroImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -97,19 +97,19 @@ export default async function HomePage() {
           <div className="bg-grid pointer-events-none absolute inset-0 opacity-25" />
         </div>
 
-        <Container className="relative w-full py-24 sm:py-28">
+        <Container className="relative w-full py-28 sm:py-32">
           <div className="max-w-2xl">
-            <p className="animate-fade-up font-display text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.25rem]">
+            <p className="animate-fade-up font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
               King of <span className="text-gradient-gold">Shades</span>
             </p>
             <p
-              className="animate-fade-up mt-1.5 text-[10px] font-medium uppercase tracking-[0.28em] text-gold/90 sm:text-[11px]"
+              className="animate-fade-up mt-2 text-[11px] font-medium uppercase tracking-[0.28em] text-gold/90 sm:text-xs"
               style={{ animationDelay: "80ms" }}
             >
               Premium Tint Co.
             </p>
             <h1
-              className="animate-fade-up mt-5 font-display text-lg font-semibold leading-snug tracking-tight text-snow/95 sm:mt-6 sm:text-2xl lg:text-[1.75rem]"
+              className="animate-fade-up mt-6 font-display text-xl font-semibold leading-snug tracking-tight text-snow/95 sm:mt-7 sm:text-2xl lg:text-3xl"
               style={{ animationDelay: "140ms" }}
             >
               {heroTitle.includes(heroHighlight) ? (
@@ -123,13 +123,13 @@ export default async function HomePage() {
               )}
             </h1>
             <p
-              className="animate-fade-up mt-3 max-w-lg text-sm leading-relaxed text-mist sm:mt-4 sm:text-base"
+              className="animate-fade-up mt-4 max-w-lg text-base leading-relaxed text-mist sm:text-lg"
               style={{ animationDelay: "200ms" }}
             >
               {heroSubtitle}
             </p>
             <div
-              className="animate-fade-up mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center"
+              className="animate-fade-up mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center"
               style={{ animationDelay: "280ms" }}
             >
               <Button href="/booking" size="lg" className="w-full sm:w-auto">

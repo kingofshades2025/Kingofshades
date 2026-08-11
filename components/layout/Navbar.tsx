@@ -57,10 +57,9 @@ export function Navbar({ site }: { site: SiteConfig }) {
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-[110] transition-all duration-300",
-          open || scrolled
-            ? "border-b border-line bg-ink"
-            : "border-b border-transparent bg-gradient-to-b from-black/80 to-transparent",
+          "fixed inset-x-0 top-0 z-[110] border-b transition-all duration-300",
+          "bg-ink/55 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-ink/40",
+          open || scrolled ? "border-white/10" : "border-transparent",
         )}
       >
         <Container>
