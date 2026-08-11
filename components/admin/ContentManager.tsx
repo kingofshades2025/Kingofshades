@@ -10,6 +10,7 @@ import {
   getWhyChoose,
   getProcessSteps,
   getBeforeAfterCards,
+  getMarketingImageChecks,
   statsToLines,
   linesToStats,
   featureStripToLines,
@@ -27,9 +28,12 @@ import { ContentSectionForm } from "@/components/admin/ContentSectionForm";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { AdminPageHeader } from "@/components/admin/AdminUI";
 import { Field, Input, Textarea } from "@/components/ui/Field";
+import { AlertTriangle } from "lucide-react";
 
 export function ContentManager({ sections: rawSections }: { sections: ContentSection[] }) {
   const sections = mergeContentSections(rawSections);
+  const imageChecks = getMarketingImageChecks(sections);
+  const missingImages = imageChecks.filter((check) => !check.present);
 
   const heroBadge = getSection(sections, "hero_badge");
   const heroTitle = getSection(sections, "hero_title");
@@ -59,6 +63,33 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
         subtitle="Edit all text and sections shown on the public site."
       />
 
+      {missingImages.length > 0 && (
+        <div
+          className="mb-8 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-4 text-sm text-amber-100"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <p className="font-medium text-amber-50">
+                {missingImages.length} required homepage photo
+                {missingImages.length === 1 ? "" : "s"} missing
+              </p>
+              <p className="mt-1 text-amber-100/80">
+                Upload these so the public site shows real installs instead of
+                placeholders (gallery photos are used as a temporary fallback when
+                available).
+              </p>
+              <ul className="mt-3 list-inside list-disc space-y-1 text-amber-50/90">
+                {missingImages.map((item) => (
+                  <li key={`${item.sectionKey}:${item.metaKey}`}>{item.label}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-10">
         <section>
           <h2 className="mb-4 font-display text-lg font-semibold text-white">Homepage — Hero</h2>
@@ -83,7 +114,7 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
 
             <ContentSectionForm
               sectionKey="hero_visual"
-              title="Hero image card"
+              title="Hero background photo"
               defaultTitle={heroVisual.title ?? ""}
               defaultBody={heroVisual.body ?? ""}
               buildMetadata={(fd) => ({
@@ -93,12 +124,12 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
             >
               <ImageUploadField
                 name="image_url"
-                label="Hero photo"
+                label="Hero photo (required)"
                 defaultValue={String(sectionMeta(sections, "hero_visual", "image_url", ""))}
-                hint="Large image on the right side of the homepage hero."
+                hint="Full-bleed homepage hero background. Required for polish."
               />
-              <Field label="Badge"><Input name="badge" defaultValue={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))} /></Field>
-              <Field label="Label"><Input name="title" defaultValue={heroVisual.title ?? ""} /></Field>
+              <Field label="Badge (unused on current hero layout)"><Input name="badge" defaultValue={String(sectionMeta(sections, "hero_visual", "badge", "Ceramic 20%"))} /></Field>
+              <Field label="Label (alt text fallback)"><Input name="title" defaultValue={heroVisual.title ?? ""} /></Field>
               <Field label="Sublabel"><Input name="body" defaultValue={heroVisual.body ?? ""} /></Field>
             </ContentSectionForm>
 
@@ -159,9 +190,9 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
           >
             <ImageUploadField
               name="image_url"
-              label="About section photo"
+              label="About section photo (required)"
               defaultValue={String(sectionMeta(sections, "about_section", "image_url", ""))}
-              hint="Photo on the left in the Who We Are section."
+              hint="Photo in the Who We Are section. Required for polish."
             />
             <Field label="Eyebrow"><Input name="eyebrow" defaultValue={String(sectionMeta(sections, "about_section", "eyebrow", "Who We Are"))} /></Field>
             <Field label="Heading"><Input name="title" defaultValue={about.title ?? ""} /></Field>
@@ -232,13 +263,15 @@ export function ContentManager({ sections: rawSections }: { sections: ContentSec
             <div className="grid gap-4 sm:grid-cols-2">
               <ImageUploadField
                 name="before_image_url"
-                label="Before photo (untinted / glare)"
+                label="Before photo (required)"
                 defaultValue={String(sectionMeta(sections, "before_after_section", "before_image_url", ""))}
+                hint="Required for the homepage before/after slider."
               />
               <ImageUploadField
                 name="after_image_url"
-                label="After photo (tinted)"
+                label="After photo (required)"
                 defaultValue={String(sectionMeta(sections, "before_after_section", "after_image_url", ""))}
+                hint="Required for the homepage before/after slider."
               />
             </div>
             <Field label="Eyebrow"><Input name="eyebrow" defaultValue={String(sectionMeta(sections, "before_after_section", "eyebrow", ""))} /></Field>

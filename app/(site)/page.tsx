@@ -15,8 +15,16 @@ import {
   getTestimonials,
   getHomepageContent,
   getSiteSettings,
+  getGalleryItems,
 } from "@/lib/queries/public";
-import { getSection, sectionMeta, getBeforeAfterCards, metaImage } from "@/lib/cms";
+import {
+  getSection,
+  sectionMeta,
+  getBeforeAfterCards,
+  metaImage,
+  galleryImageUrls,
+  fillMissingImages,
+} from "@/lib/cms";
 import { toLegacyService, toLegacyTestimonial } from "@/lib/adapters";
 import { toSiteConfig } from "@/lib/site-config";
 import { Section, SectionHeading } from "@/components/ui/Section";
@@ -33,13 +41,19 @@ const whyIcons = { shield: ShieldCheck, badge: BadgeCheck, gem: Gem, clock: Cloc
 const stripIcons = { sun: Sun, snowflake: Snowflake, eye: Eye, shield: ShieldCheck };
 
 export default async function HomePage() {
-  const [{ sections, stats, featureStrip, whyChoose, processSteps }, dbServices, dbTestimonials, settings] =
-    await Promise.all([
-      getHomepageContent(),
-      getServices(),
-      getTestimonials(),
-      getSiteSettings(),
-    ]);
+  const [
+    { sections, stats, featureStrip, whyChoose, processSteps },
+    dbServices,
+    dbTestimonials,
+    settings,
+    galleryItems,
+  ] = await Promise.all([
+    getHomepageContent(),
+    getServices(),
+    getTestimonials(),
+    getSiteSettings(),
+    getGalleryItems(),
+  ]);
 
   const site = toSiteConfig(settings);
   const cta = getSection(sections, "cta_band");
@@ -51,7 +65,17 @@ export default async function HomePage() {
   const testimonialsSection = getSection(sections, "testimonials_section");
   const heroVisual = getSection(sections, "hero_visual");
   const beforeAfterCards = getBeforeAfterCards(sections);
-  const heroImageUrl = metaImage(sections, "hero_visual", "image_url");
+  const galleryUrls = galleryImageUrls(galleryItems);
+  const [heroImageUrl, aboutImageUrl, beforeImageUrl, afterImageUrl] =
+    fillMissingImages(
+      [
+        metaImage(sections, "hero_visual", "image_url"),
+        metaImage(sections, "about_section", "image_url"),
+        metaImage(sections, "before_after_section", "before_image_url"),
+        metaImage(sections, "before_after_section", "after_image_url"),
+      ],
+      galleryUrls,
+    );
 
   const services = dbServices.length
     ? dbServices.slice(0, 4).map(toLegacyService)
@@ -67,7 +91,6 @@ export default async function HomePage() {
   const aboutBullets = Array.isArray(aboutBulletsRaw)
     ? aboutBulletsRaw.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
-  const aboutImageUrl = metaImage(sections, "about_section", "image_url");
 
   return (
     <>
@@ -85,10 +108,9 @@ export default async function HomePage() {
               className="h-full w-full"
               aria-hidden
               style={{
-                background: `
-                  radial-gradient(80% 60% at 70% 20%, rgba(212,175,55,0.18) 0%, transparent 55%),
-                  radial-gradient(50% 40% at 10% 80%, rgba(42,91,215,0.12) 0%, transparent 50%),
-                  linear-gradient(160deg, #121212 0%, #0a0a0a 55%, #050505 100%)
+                  background: `
+                  radial-gradient(80% 60% at 70% 20%, rgba(212,175,55,0.12) 0%, transparent 55%),
+                  linear-gradient(160deg, #161616 0%, #0a0a0a 55%, #050505 100%)
                 `,
               }}
             />
@@ -179,7 +201,7 @@ export default async function HomePage() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="relative order-2 lg:order-1">
             <TintGlass
-              hue={280}
+              emptyStyle="photo"
               className="aspect-[5/4]"
               label={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_label", ""))}
               sublabel={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_sublabel", ""))}
@@ -265,11 +287,10 @@ export default async function HomePage() {
         />
         <div className="mx-auto mt-12 max-w-4xl">
           <BeforeAfter
-            hue={28}
             className="aspect-[16/9]"
             label={String(sectionMeta(sections, "before_after_section", "slider_label", ""))}
-            beforeImage={metaImage(sections, "before_after_section", "before_image_url")}
-            afterImage={metaImage(sections, "before_after_section", "after_image_url")}
+            beforeImage={beforeImageUrl}
+            afterImage={afterImageUrl}
           />
         </div>
         <div className="mx-auto mt-6 grid max-w-4xl gap-4 sm:grid-cols-3">

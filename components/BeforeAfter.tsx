@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 
 export function BeforeAfter({
   className,
-  hue = 210,
   label,
   beforeImage,
   afterImage,
 }: {
   className?: string;
+  /** @deprecated Kept for callers; empty state is photographic, not hue-based. */
   hue?: number;
   label?: string;
   beforeImage?: string | null;
@@ -27,14 +27,15 @@ export function BeforeAfter({
   const afterStyle = showAfter
     ? undefined
     : {
-        background: `radial-gradient(120% 120% at 80% 10%, hsla(${hue},65%,45%,0.30) 0%, transparent 55%), linear-gradient(135deg, hsl(${hue},28%,11%) 0%, #070707 100%)`,
+        background:
+          "radial-gradient(90% 70% at 50% 30%, rgba(212,175,55,0.10) 0%, transparent 55%), linear-gradient(165deg, #1a1a1a 0%, #0c0c0c 50%, #070707 100%)",
       };
 
   const beforeStyle = showBefore
     ? undefined
     : {
         background:
-          "radial-gradient(120% 120% at 75% 0%, rgba(255,250,235,0.85) 0%, rgba(220,225,235,0.55) 35%, rgba(150,165,185,0.5) 100%)",
+          "radial-gradient(90% 70% at 40% 20%, rgba(255,255,255,0.08) 0%, transparent 50%), linear-gradient(165deg, #2a2a2a 0%, #141414 55%, #0a0a0a 100%)",
       };
 
   return (
@@ -54,7 +55,7 @@ export function BeforeAfter({
             onError={() => setAfterFailed(true)}
           />
         ) : (
-          <div className="bg-grid absolute inset-0 opacity-30" />
+          <div className="bg-grid absolute inset-0 opacity-25" />
         )}
         <span className="absolute bottom-3 right-3 z-10 rounded-full border border-gold/30 bg-black/50 px-2.5 py-1 text-[11px] font-semibold text-gold backdrop-blur">
           After — Tinted
@@ -74,16 +75,10 @@ export function BeforeAfter({
             onError={() => setBeforeFailed(true)}
           />
         ) : (
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.9) 47%, transparent 56%)",
-            }}
-          />
+          <div className="bg-grid absolute inset-0 opacity-20" />
         )}
-        <span className="absolute bottom-3 left-3 z-10 rounded-full border border-black/20 bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-black/80 backdrop-blur">
-          Before — Glare
+        <span className="absolute bottom-3 left-3 z-10 rounded-full border border-white/15 bg-black/50 px-2.5 py-1 text-[11px] font-semibold text-snow/80 backdrop-blur">
+          Before
         </span>
       </div>
 

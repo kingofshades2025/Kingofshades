@@ -222,6 +222,87 @@ export function metaImage(
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+/** Collect usable image URLs from gallery rows (or any image_url-bearing records). */
+export function galleryImageUrls(
+  items: { image_url?: string | null }[],
+): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const item of items) {
+    const url = item.image_url?.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+  }
+  return urls;
+}
+
+/**
+ * Fill missing CMS image slots from a gallery pool without reusing the same
+ * URL for two empty slots when possible.
+ */
+export function fillMissingImages(
+  primaries: (string | undefined)[],
+  pool: string[],
+): (string | undefined)[] {
+  const used = new Set(primaries.filter((url): url is string => Boolean(url)));
+  let poolIdx = 0;
+
+  return primaries.map((primary) => {
+    if (primary) return primary;
+
+    while (poolIdx < pool.length) {
+      const candidate = pool[poolIdx++];
+      if (!used.has(candidate)) {
+        used.add(candidate);
+        return candidate;
+      }
+    }
+
+    return pool.find((url) => !used.has(url)) ?? pool[0];
+  });
+}
+
+export type MarketingImageCheck = {
+  sectionKey: string;
+  metaKey: string;
+  label: string;
+  present: boolean;
+};
+
+/** Required homepage photos for public polish (admin checklist). */
+export function getMarketingImageChecks(
+  sections: Record<string, ContentSection>,
+): MarketingImageCheck[] {
+  const checks: Omit<MarketingImageCheck, "present">[] = [
+    {
+      sectionKey: "hero_visual",
+      metaKey: "image_url",
+      label: "Hero photo",
+    },
+    {
+      sectionKey: "about_section",
+      metaKey: "image_url",
+      label: "About photo",
+    },
+    {
+      sectionKey: "before_after_section",
+      metaKey: "before_image_url",
+      label: "Before photo",
+    },
+    {
+      sectionKey: "before_after_section",
+      metaKey: "after_image_url",
+      label: "After photo",
+    },
+  ];
+
+  return checks.map((check) => ({
+    ...check,
+    present: Boolean(metaImage(sections, check.sectionKey, check.metaKey)),
+  }));
+}
+
 export function linesToFeatures(text: string) {
   return text
     .split("\n")

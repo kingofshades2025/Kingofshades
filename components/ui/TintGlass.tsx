@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+type EmptyStyle = "glass" | "photo";
+
 export function TintGlass({
   hue = 210,
   label,
@@ -12,6 +14,7 @@ export function TintGlass({
   className,
   intensity = 0.9,
   imageUrl,
+  emptyStyle = "glass",
 }: {
   hue?: number;
   label?: string;
@@ -21,16 +24,26 @@ export function TintGlass({
   className?: string;
   intensity?: number;
   imageUrl?: string | null;
+  /** `photo` = muted photographic placeholder (marketing). `glass` = tint mock. */
+  emptyStyle?: EmptyStyle;
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(imageUrl) && !failed;
-  const gradientStyle = {
-    background: `
-      radial-gradient(120% 120% at 80% 0%, hsla(${hue}, 70%, 55%, ${0.22 * intensity}) 0%, transparent 55%),
-      radial-gradient(120% 120% at 0% 100%, hsla(${hue + 30}, 60%, 40%, ${0.18 * intensity}) 0%, transparent 50%),
-      linear-gradient(135deg, hsl(${hue}, 30%, 12%) 0%, #0d0d0d 55%, #060606 100%)
-    `,
-  };
+  const emptyBackground =
+    emptyStyle === "photo"
+      ? {
+          background: `
+            radial-gradient(90% 70% at 50% 30%, rgba(212,175,55,0.08) 0%, transparent 55%),
+            linear-gradient(165deg, #1a1a1a 0%, #0c0c0c 45%, #070707 100%)
+          `,
+        }
+      : {
+          background: `
+            radial-gradient(120% 120% at 80% 0%, hsla(${hue}, 70%, 55%, ${0.22 * intensity}) 0%, transparent 55%),
+            radial-gradient(120% 120% at 0% 100%, hsla(${hue + 30}, 60%, 40%, ${0.18 * intensity}) 0%, transparent 50%),
+            linear-gradient(135deg, hsl(${hue}, 30%, 12%) 0%, #0d0d0d 55%, #060606 100%)
+          `,
+        };
 
   return (
     <div
@@ -38,7 +51,7 @@ export function TintGlass({
         "group relative overflow-hidden rounded-2xl border border-line",
         className,
       )}
-      style={showImage ? undefined : gradientStyle}
+      style={showImage ? undefined : emptyBackground}
     >
       {showImage && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -56,11 +69,20 @@ export function TintGlass({
             className="pointer-events-none absolute inset-0 opacity-60"
             style={{
               background:
-                "linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.02) 50%, transparent 60%)",
+                emptyStyle === "photo"
+                  ? "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.04) 48%, transparent 58%)"
+                  : "linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.02) 50%, transparent 60%)",
             }}
           />
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-          <div className="pointer-events-none absolute -inset-x-1/2 -top-1/2 h-[200%] w-[60%] -translate-x-full rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-[250%]" />
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-0 bg-grid",
+              emptyStyle === "photo" ? "opacity-25" : "opacity-40",
+            )}
+          />
+          {emptyStyle === "glass" && (
+            <div className="pointer-events-none absolute -inset-x-1/2 -top-1/2 h-[200%] w-[60%] -translate-x-full rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-[250%]" />
+          )}
         </>
       )}
 
