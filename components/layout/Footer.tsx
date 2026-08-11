@@ -5,7 +5,7 @@ import type { SiteConfig } from "@/lib/site-config";
 import type { Service } from "@/lib/types/database";
 import { Container } from "@/components/ui/Container";
 import { Logo } from "@/components/ui/Logo";
-import { SocialIcon } from "@/components/ui/SocialIcon";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 
 export function Footer({
   site,
@@ -23,18 +23,11 @@ export function Footer({
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-mist">{tagline}</p>
-            <div className="mt-6 flex gap-2.5">
-              {site.socials.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  aria-label={s.label}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-charcoal-light text-snow/70 transition-colors hover:border-gold/40 hover:text-gold"
-                >
-                  <SocialIcon name={s.icon} className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
+            <SocialLinks
+              socials={site.socials}
+              className="mt-6"
+              iconClassName="h-4 w-4"
+            />
           </div>
 
           <div>

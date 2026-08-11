@@ -21,6 +21,28 @@ function phoneHref(phone: string) {
   return digits ? `tel:+${digits.startsWith("1") ? digits : `1${digits}`}` : staticSite.phoneHref;
 }
 
+function isConfiguredHref(href: string) {
+  return Boolean(href) && href !== "#" && href !== "/";
+}
+
+/** Prefer DB socials, but fill placeholder "#" hrefs from static defaults. */
+function resolveSocials(
+  links: { label: string; href: string; icon: string }[],
+): { label: string; href: string; icon: string }[] {
+  return links.map((link) => {
+    if (isConfiguredHref(link.href)) return { ...link };
+    const fallback = staticSite.socials.find(
+      (s) =>
+        s.icon === link.icon ||
+        s.label.toLowerCase() === link.label.toLowerCase(),
+    );
+    if (fallback && isConfiguredHref(fallback.href)) {
+      return { ...link, href: fallback.href };
+    }
+    return { ...link };
+  });
+}
+
 export function getBusinessAddressLines(settings?: SiteSettings | null) {
   const { address } = toSiteConfig(settings);
   return {
@@ -49,7 +71,10 @@ export function toSiteConfig(settings?: SiteSettings | null): SiteConfig {
     },
     hours:
       settings?.business_hours?.length ? settings.business_hours : [...staticSite.hours],
-    socials:
-      settings?.social_links?.length ? settings.social_links : [...staticSite.socials],
+    socials: resolveSocials(
+      settings?.social_links?.length
+        ? settings.social_links
+        : [...staticSite.socials],
+    ),
   };
 }
