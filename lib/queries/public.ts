@@ -1,9 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ICON_BY_KIND, resolveServiceFormKind } from "@/lib/booking/service-form";
 import { mergeContentSections, getStats, getFeatureStrip, getWhyChoose, getProcessSteps } from "@/lib/cms";
 import { services as mockServices, testimonials as mockTestimonials, galleryItems as mockGallery } from "@/lib/data";
 import { site as fallbackSite } from "@/lib/site";
+import { SITE_CACHE_TAGS, SITE_REVALIDATE_SECONDS } from "@/lib/cache/site";
 import type {
   Service,
   Testimonial,
@@ -51,12 +53,12 @@ function mapMockServices() {
   }));
 }
 
-export async function getServices(): Promise<Service[]> {
+async function fetchServices(): Promise<Service[]> {
   if (!isSupabaseConfigured()) {
     return mapMockServices();
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   let { data, error } = await supabase
     .from("services")
     .select("*")
@@ -84,7 +86,7 @@ export async function getServices(): Promise<Service[]> {
   return data as Service[];
 }
 
-export async function getTestimonials(): Promise<Testimonial[]> {
+async function fetchTestimonials(): Promise<Testimonial[]> {
   if (!isSupabaseConfigured()) {
     return mockTestimonials.map((t, i) => ({
       id: String(i),
@@ -98,7 +100,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }));
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase
     .from("testimonials")
     .select("*")
@@ -120,7 +122,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   return data as Testimonial[];
 }
 
-export async function getGalleryItems(): Promise<GalleryItem[]> {
+async function fetchGalleryItems(): Promise<GalleryItem[]> {
   if (!isSupabaseConfigured()) {
     return mockGallery.map((g) => ({
       id: String(g.id),
@@ -134,7 +136,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
     }));
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase
     .from("gallery_items")
     .select("*")
@@ -155,23 +157,64 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
   return data as GalleryItem[];
 }
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+async function fetchSiteSettings(): Promise<SiteSettings> {
   if (!isSupabaseConfigured()) return DEFAULT_SETTINGS;
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from("site_settings").select("*").limit(1).maybeSingle();
 
   return (data as SiteSettings) ?? DEFAULT_SETTINGS;
 }
 
-export async function getContentSections(): Promise<Record<string, ContentSection>> {
+async function fetchContentSections(): Promise<Record<string, ContentSection>> {
   if (!isSupabaseConfigured()) return mergeContentSections([]);
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from("content_sections").select("*");
 
   return mergeContentSections((data ?? []) as ContentSection[]);
 }
+
+export const getServices = unstable_cache(fetchServices, ["public-services"], {
+  revalidate: SITE_REVALIDATE_SECONDS,
+  tags: [SITE_CACHE_TAGS.services, SITE_CACHE_TAGS.all],
+});
+
+export const getTestimonials = unstable_cache(
+  fetchTestimonials,
+  ["public-testimonials"],
+  {
+    revalidate: SITE_REVALIDATE_SECONDS,
+    tags: [SITE_CACHE_TAGS.testimonials, SITE_CACHE_TAGS.all],
+  },
+);
+
+export const getGalleryItems = unstable_cache(
+  fetchGalleryItems,
+  ["public-gallery"],
+  {
+    revalidate: SITE_REVALIDATE_SECONDS,
+    tags: [SITE_CACHE_TAGS.gallery, SITE_CACHE_TAGS.all],
+  },
+);
+
+export const getSiteSettings = unstable_cache(
+  fetchSiteSettings,
+  ["public-site-settings"],
+  {
+    revalidate: SITE_REVALIDATE_SECONDS,
+    tags: [SITE_CACHE_TAGS.settings, SITE_CACHE_TAGS.all],
+  },
+);
+
+export const getContentSections = unstable_cache(
+  fetchContentSections,
+  ["public-content-sections"],
+  {
+    revalidate: SITE_REVALIDATE_SECONDS,
+    tags: [SITE_CACHE_TAGS.content, SITE_CACHE_TAGS.all],
+  },
+);
 
 export async function getHomepageContent() {
   const sections = await getContentSections();

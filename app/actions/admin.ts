@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePublicMarketing } from "@/lib/cache/site";
 import type { AppointmentStatus, GalleryCategory, QuoteLineItem, QuoteStatus } from "@/lib/types/database";
 import { sendEmail, appointmentConfirmedHtml, appointmentQuoteSentHtml, quoteSentHtml, serviceCompletedHtml } from "@/lib/email";
 import { getSiteBaseUrl } from "@/lib/app-url";
@@ -129,8 +130,7 @@ export async function upsertService(formData: FormData): Promise<ActionResult> {
     } else if (error) {
       return { success: false, error: error.message };
     }
-    revalidatePath("/");
-    revalidatePath("/services");
+    revalidatePublicMarketing(["services"]);
     revalidatePath("/admin/services");
     return { success: true };
   } catch (err) {
@@ -147,8 +147,7 @@ export async function deleteService(id: string): Promise<ActionResult> {
     const { supabase } = await requireAdmin();
     const { error } = await supabase.from("services").delete().eq("id", id);
     if (error) return { success: false, error: error.message };
-    revalidatePath("/");
-    revalidatePath("/services");
+    revalidatePublicMarketing(["services"]);
     revalidatePath("/admin/services");
     return { success: true };
   } catch (err) {
@@ -669,7 +668,7 @@ export async function upsertGalleryItem(formData: FormData): Promise<ActionResul
       : await supabase.from("gallery_items").insert(payload);
 
     if (error) return { success: false, error: error.message };
-    revalidatePath("/gallery");
+    revalidatePublicMarketing(["gallery"]);
     revalidatePath("/admin/gallery");
     return { success: true };
   } catch (err) {
@@ -684,7 +683,7 @@ export async function deleteGalleryItem(id: string): Promise<ActionResult> {
     const { supabase } = await requireAdmin();
     const { error } = await supabase.from("gallery_items").delete().eq("id", id);
     if (error) return { success: false, error: error.message };
-    revalidatePath("/gallery");
+    revalidatePublicMarketing(["gallery"]);
     revalidatePath("/admin/gallery");
     return { success: true };
   } catch (err) {
@@ -717,7 +716,7 @@ export async function upsertTestimonial(formData: FormData): Promise<ActionResul
       : await supabase.from("testimonials").insert(payload);
 
     if (error) return { success: false, error: error.message };
-    revalidatePath("/");
+    revalidatePublicMarketing(["testimonials"]);
     revalidatePath("/admin/testimonials");
     return { success: true };
   } catch (err) {
@@ -732,7 +731,7 @@ export async function deleteTestimonial(id: string): Promise<ActionResult> {
     const { supabase } = await requireAdmin();
     const { error } = await supabase.from("testimonials").delete().eq("id", id);
     if (error) return { success: false, error: error.message };
-    revalidatePath("/");
+    revalidatePublicMarketing(["testimonials"]);
     revalidatePath("/admin/testimonials");
     return { success: true };
   } catch (err) {
@@ -823,8 +822,7 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
       : await supabase.from("site_settings").insert(payload);
 
     if (error) return { success: false, error: error.message };
-    revalidatePath("/", "layout");
-    revalidatePath("/contact");
+    revalidatePublicMarketing(["settings"]);
     revalidatePath("/admin/settings");
     return { success: true };
   } catch (err) {
@@ -868,11 +866,7 @@ export async function saveContentSection(formData: FormData): Promise<ActionResu
       .upsert(payload, { onConflict: "section_key" });
 
     if (error) return { success: false, error: error.message };
-    revalidatePath("/", "layout");
-    revalidatePath("/services");
-    revalidatePath("/gallery");
-    revalidatePath("/contact");
-    revalidatePath("/booking");
+    revalidatePublicMarketing(["content"]);
     revalidatePath("/admin/content");
     revalidatePath("/admin/settings");
     return { success: true };

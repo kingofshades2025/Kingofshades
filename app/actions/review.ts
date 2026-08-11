@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getAppointmentForReview } from "@/lib/queries/review";
+import { revalidatePublicMarketing } from "@/lib/cache/site";
 
 export type ReviewResult = { success: true } | { success: false; error: string };
 
@@ -67,7 +68,7 @@ export async function submitReview(formData: FormData): Promise<ReviewResult> {
     console.error("[submitReview] invalidate token", updateError.message);
   }
 
-  revalidatePath("/");
+  revalidatePublicMarketing(["testimonials"]);
   revalidatePath("/admin/testimonials");
   revalidatePath("/admin/appointments");
   return { success: true };

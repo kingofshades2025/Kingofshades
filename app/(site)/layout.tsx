@@ -3,8 +3,10 @@ import { Footer } from "@/components/layout/Footer";
 import { getSiteSettings, getContentSections, getServices } from "@/lib/queries/public";
 import { toSiteConfig } from "@/lib/site-config";
 import { getSection, mergeContentSections } from "@/lib/cms";
+import { SITE_REVALIDATE_SECONDS } from "@/lib/cache/site";
 
-export const dynamic = "force-dynamic";
+/** ISR marketing shell — refreshed on a timer and via admin revalidateTag. */
+export const revalidate = SITE_REVALIDATE_SECONDS;
 
 export default async function SiteLayout({
   children,
@@ -13,7 +15,7 @@ export default async function SiteLayout({
 }) {
   let settings = null;
   let sections = mergeContentSections([]);
-  let services = await getServices().catch(() => []);
+  let services: Awaited<ReturnType<typeof getServices>> = [];
 
   try {
     [settings, sections, services] = await Promise.all([
