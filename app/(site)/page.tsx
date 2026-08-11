@@ -71,7 +71,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative flex min-h-[100svh] items-end overflow-hidden">
+      <section className="relative flex min-h-[58svh] items-center overflow-hidden sm:min-h-[62svh] lg:min-h-[560px]">
         <div className="absolute inset-0">
           {heroImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -93,23 +93,23 @@ export default async function HomePage() {
               }}
             />
           )}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-ink/35" />
-          <div className="bg-grid pointer-events-none absolute inset-0 opacity-30" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-ink/40" />
+          <div className="bg-grid pointer-events-none absolute inset-0 opacity-25" />
         </div>
 
-        <Container className="relative w-full pb-14 pt-28 sm:pb-20 sm:pt-36">
+        <Container className="relative w-full py-24 sm:py-28">
           <div className="max-w-2xl">
-            <p className="animate-fade-up font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <p className="animate-fade-up font-display text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.25rem]">
               King of <span className="text-gradient-gold">Shades</span>
             </p>
             <p
-              className="animate-fade-up mt-2 text-[11px] font-medium uppercase tracking-[0.28em] text-gold/90 sm:text-xs"
+              className="animate-fade-up mt-1.5 text-[10px] font-medium uppercase tracking-[0.28em] text-gold/90 sm:text-[11px]"
               style={{ animationDelay: "80ms" }}
             >
               Premium Tint Co.
             </p>
             <h1
-              className="animate-fade-up mt-6 font-display text-xl font-semibold leading-snug tracking-tight text-snow/95 sm:mt-8 sm:text-2xl lg:text-3xl"
+              className="animate-fade-up mt-5 font-display text-lg font-semibold leading-snug tracking-tight text-snow/95 sm:mt-6 sm:text-2xl lg:text-[1.75rem]"
               style={{ animationDelay: "140ms" }}
             >
               {heroTitle.includes(heroHighlight) ? (
@@ -123,13 +123,13 @@ export default async function HomePage() {
               )}
             </h1>
             <p
-              className="animate-fade-up mt-4 max-w-lg text-base leading-relaxed text-mist sm:text-lg"
+              className="animate-fade-up mt-3 max-w-lg text-sm leading-relaxed text-mist sm:mt-4 sm:text-base"
               style={{ animationDelay: "200ms" }}
             >
               {heroSubtitle}
             </p>
             <div
-              className="animate-fade-up mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+              className="animate-fade-up mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center"
               style={{ animationDelay: "280ms" }}
             >
               <Button href="/booking" size="lg" className="w-full sm:w-auto">
@@ -144,31 +144,29 @@ export default async function HomePage() {
       </section>
 
       <div className="border-y border-line bg-charcoal/60">
-        <Container className="grid grid-cols-2 gap-y-4 py-5 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:py-6">
-          {featureStrip.map(({ icon, label }) => {
-            const Icon = stripIcons[icon as keyof typeof stripIcons] ?? ShieldCheck;
-            return (
-              <div
-                key={label}
-                className="flex items-center justify-center gap-2 px-2 py-1 sm:gap-3 sm:px-0 sm:py-0"
-              >
-                <Icon className="h-4 w-4 shrink-0 text-gold sm:h-5 sm:w-5" />
-                <span className="text-center text-xs font-medium leading-snug text-snow/85 sm:text-sm">
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </Container>
-      </div>
-
-      <div className="border-b border-line bg-ink">
-        <Container className="py-10 sm:py-12">
-          <dl className="grid grid-cols-2 gap-8 sm:grid-cols-4 sm:gap-6">
+        <Container className="py-5 sm:py-6">
+          <div className="grid grid-cols-2 gap-y-4 sm:grid-cols-4 sm:gap-y-0 sm:divide-x">
+            {featureStrip.map(({ icon, label }) => {
+              const Icon = stripIcons[icon as keyof typeof stripIcons] ?? ShieldCheck;
+              return (
+                <div
+                  key={label}
+                  className="flex items-center justify-center gap-2 px-2 py-1 sm:gap-3 sm:px-0 sm:py-0"
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-gold sm:h-5 sm:w-5" />
+                  <span className="text-center text-xs font-medium leading-snug text-snow/85 sm:text-sm">
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="gold-divider mx-auto mt-5 h-px w-full max-w-3xl opacity-40 sm:mt-6" />
+          <dl className="mt-5 grid grid-cols-2 gap-6 sm:mt-6 sm:grid-cols-4 sm:gap-4">
             {stats.map((s) => (
-              <div key={s.label} className="text-center sm:text-left">
-                <dt className="font-display text-2xl font-bold text-white sm:text-3xl">{s.value}</dt>
-                <dd className="mt-1.5 text-[0.65rem] uppercase tracking-wider text-mist sm:text-xs">
+              <div key={s.label} className="text-center">
+                <dt className="font-display text-xl font-bold text-white sm:text-2xl">{s.value}</dt>
+                <dd className="mt-1 text-[0.65rem] uppercase tracking-wider text-mist sm:text-xs">
                   {s.label}
                 </dd>
               </div>
