@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
+import { noIndexRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Customer Portal",
+  robots: noIndexRobots,
+};
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (

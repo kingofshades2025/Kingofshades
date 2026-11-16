@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   ArrowRight,
   ShieldCheck,
@@ -36,6 +37,13 @@ import { TintGlass } from "@/components/ui/TintGlass";
 import { ServiceCard } from "@/components/ServiceCard";
 import { BeforeAfter } from "@/components/BeforeAfter";
 import { CtaBand } from "@/components/sections/CtaBand";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  description:
+    "Window tinting for cars, homes, and commercial properties in Brigantine and South Jersey, plus custom vinyl. Heat rejection, UV protection, and a lifetime workmanship warranty.",
+  path: "/",
+});
 
 const whyIcons = { shield: ShieldCheck, badge: BadgeCheck, gem: Gem, clock: Clock };
 const stripIcons = { sun: Sun, snowflake: Snowflake, eye: Eye, shield: ShieldCheck };
@@ -206,6 +214,7 @@ export default async function HomePage() {
               label={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_label", ""))}
               sublabel={aboutImageUrl ? undefined : String(sectionMeta(sections, "about_section", "visual_sublabel", ""))}
               imageUrl={aboutImageUrl}
+              alt={about.title || `${site.name} window tinting`}
             />
             <div className="absolute -bottom-5 right-6 rounded-2xl border border-gold/30 bg-ink/90 px-5 py-4 backdrop-blur">
               <p className="font-display text-3xl font-bold text-gradient-gold">

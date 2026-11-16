@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getDashboardStats } from "@/lib/queries/admin";
+import { noIndexRobots } from "@/lib/seo";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
+  robots: noIndexRobots,
 };
 
 export default async function AdminPanelLayout({

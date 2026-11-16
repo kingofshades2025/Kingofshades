@@ -3,9 +3,11 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ForgotPasswordForm } from "@/components/admin/ForgotPasswordForm";
 import { Logo } from "@/components/ui/Logo";
+import { noIndexRobots } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Reset Password",
+  robots: noIndexRobots,
 };
 
 export default function ForgotPasswordPage() {

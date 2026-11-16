@@ -7,7 +7,7 @@ export const site = {
   email: "kingofshades2025@gmail.com",
   emailHref: "mailto:kingofshades2025@gmail.com",
   domain: "kingofshadesnj.com",
-  url: "https://kingofshadesnj.com",
+  url: "https://www.kingofshadesnj.com",
   address: {
     line1: "Brigantine, NJ",
     line2: "Serving Atlantic County & South Jersey",

@@ -56,7 +56,7 @@ export function Footer({
               {services.map((s) => (
                 <li key={s.slug}>
                   <Link
-                    href={`/services#${s.slug}`}
+                    href={`/services/${s.slug}`}
                     className="text-mist transition-colors hover:text-gold"
                   >
                     {s.title.replace(" Window Tinting", "")}

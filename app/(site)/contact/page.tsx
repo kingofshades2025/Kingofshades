@@ -8,12 +8,14 @@ import { SocialLinks } from "@/components/ui/SocialLinks";
 import { getContentSections, getSiteSettings } from "@/lib/queries/public";
 import { getSection, sectionMeta } from "@/lib/cms";
 import { toSiteConfig } from "@/lib/site-config";
+import { pageMetadata } from "@/lib/seo";
+import { site as fallbackSite } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Contact Us",
-  description:
-    "Get in touch with King of Shades for a free quote, business hours, and location details.",
-};
+  description: `Call ${fallbackSite.phone} for a free window tint estimate on a car, home, or commercial property in Brigantine and South Jersey.`,
+  path: "/contact",
+});
 
 export default async function ContactPage() {
   const [sections, settings] = await Promise.all([

@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { CheckCircle2 } from "lucide-react";
 import { getAppointmentConfirmation } from "@/app/actions/confirmation";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { Button } from "@/components/ui/Button";
+import { noIndexRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Booking Confirmed",
+  robots: noIndexRobots,
+};
 
 export default async function BookingConfirmationPage({
   searchParams,

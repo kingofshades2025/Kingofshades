@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LegalDocument, LegalSection } from "@/components/legal/LegalDocument";
 import { site } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Terms of Service",
-  description: `Terms governing use of the ${site.name} website and services.`,
-};
+  description: `Terms for using the ${site.name} website and booking window tinting in Brigantine, NJ.`,
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

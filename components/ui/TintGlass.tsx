@@ -14,6 +14,7 @@ export function TintGlass({
   className,
   intensity = 0.9,
   imageUrl,
+  alt = "",
   emptyStyle = "glass",
 }: {
   hue?: number;
@@ -24,6 +25,8 @@ export function TintGlass({
   className?: string;
   intensity?: number;
   imageUrl?: string | null;
+  /** Descriptive text when a photo is shown. Empty for decorative placeholders. */
+  alt?: string;
   /** `photo` = muted photographic placeholder (marketing). `glass` = tint mock. */
   emptyStyle?: EmptyStyle;
 }) {
@@ -57,7 +60,7 @@ export function TintGlass({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl!}
-          alt=""
+          alt={alt}
           className="absolute inset-0 h-full w-full object-cover"
           onError={() => setFailed(true)}
         />

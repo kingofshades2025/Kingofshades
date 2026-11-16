@@ -4,12 +4,14 @@ import { PageHeader } from "@/components/sections/PageHeader";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { getBookingServices, getContentSections } from "@/lib/queries/public";
 import { getSection, sectionMeta } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Book an Appointment",
   description:
-    "Book your window tint or vinyl appointment online in a few quick steps.",
-};
+    "Book window tint for a car, home, or commercial property in Brigantine and South Jersey.",
+  path: "/booking",
+});
 
 export default async function BookingPage() {
   const [services, sections] = await Promise.all([

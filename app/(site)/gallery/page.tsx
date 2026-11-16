@@ -8,12 +8,14 @@ import { getSection, sectionMeta } from "@/lib/cms";
 import { toLegacyGalleryItem } from "@/lib/adapters";
 import { toSiteConfig } from "@/lib/site-config";
 import { galleryItems as mockGallery } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Gallery",
+export const metadata: Metadata = pageMetadata({
+  title: "Project Gallery",
   description:
-    "Browse our portfolio of automotive, residential, commercial tinting and custom decal projects.",
-};
+    "Window tint and vinyl projects on cars, homes, and commercial properties across Brigantine and South Jersey.",
+  path: "/gallery",
+});
 
 export default async function GalleryPage() {
   const [dbItems, sections, settings] = await Promise.all([

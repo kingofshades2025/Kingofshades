@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { CheckCircle2 } from "lucide-react";
+import { noIndexRobots } from "@/lib/seo";
 import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/sections/PageHeader";
@@ -8,6 +10,11 @@ import {
   getAppointmentForQuoteConfirm,
 } from "@/lib/queries/quote-confirm";
 import { formatMoney } from "@/lib/booking/pricing";
+
+export const metadata: Metadata = {
+  title: "Quote Confirmed",
+  robots: noIndexRobots,
+};
 
 export default async function QuoteAcceptSuccessPage({
   searchParams,

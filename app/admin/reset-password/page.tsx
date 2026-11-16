@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { ResetPasswordForm } from "@/components/admin/ResetPasswordForm";
 import { Logo } from "@/components/ui/Logo";
+import { noIndexRobots } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Set New Password",
+  robots: noIndexRobots,
 };
 
 export default function ResetPasswordPage() {

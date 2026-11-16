@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Sora, Inter } from "next/font/google";
+import { metadataBaseUrl } from "@/lib/seo";
+import { site } from "@/lib/site";
 import "./globals.css";
 
 const sora = Sora({
@@ -14,18 +16,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: metadataBaseUrl(),
   title: {
     default: "King of Shades — Premium Window Tinting & Custom Vinyl",
     template: "%s | King of Shades",
   },
   description:
-    "King of Shades delivers premium automotive, residential, and commercial window tinting plus custom decals and vinyl graphics. Heat rejection, UV protection, privacy, and style.",
+    "Window tinting for cars, homes, and commercial properties in Brigantine and South Jersey, plus custom vinyl. Heat rejection, UV protection, and a lifetime workmanship warranty.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: site.name,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   keywords: [
     "window tinting",
-    "automotive tint",
+    "home window tint",
+    "commercial window tint",
+    "automotive window tint",
     "ceramic tint",
     "residential window film",
-    "commercial window tint",
     "custom decals",
     "vinyl graphics",
   ],

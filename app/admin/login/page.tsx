@@ -4,9 +4,11 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { Logo } from "@/components/ui/Logo";
+import { noIndexRobots } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Admin Login",
+  robots: noIndexRobots,
 };
 
 export default function AdminLoginPage() {

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { QuoteRequestForm } from "@/components/quotes/QuoteRequestForm";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Request a Quote",
   description:
-    "Request a free custom estimate for automotive, residential, commercial tint, or vinyl graphics.",
-};
+    "Request a free estimate for window tint on a car, home, or commercial property, plus vinyl graphics, in Brigantine and South Jersey.",
+  path: "/quote",
+});
 
 export default function QuotePage() {
   return (

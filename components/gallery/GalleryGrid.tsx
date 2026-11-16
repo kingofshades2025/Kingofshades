@@ -93,6 +93,7 @@ export function GalleryGrid({
               )}
               badge={item.tint}
               imageUrl={item.imageUrl}
+              alt={item.title}
             />
             <div className="mt-2.5 flex items-center justify-between gap-2 px-0.5">
               <div className="min-w-0">
@@ -150,6 +151,7 @@ export function GalleryGrid({
               badge={current.tint}
               icon={current.imageUrl ? undefined : <Maximize2 />}
               imageUrl={current.imageUrl}
+              alt={current.title}
             />
             <div className="mt-4 flex items-center justify-between gap-4">
               <div>

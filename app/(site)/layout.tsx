@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { LocalBusinessJsonLd } from "@/components/seo/LocalBusinessJsonLd";
 import { getSiteSettings, getContentSections, getServices } from "@/lib/queries/public";
 import { toSiteConfig } from "@/lib/site-config";
 import { getSection, mergeContentSections } from "@/lib/cms";
@@ -31,6 +32,7 @@ export default async function SiteLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <LocalBusinessJsonLd site={site} services={services} />
       <Navbar site={site} />
       <main className="flex-1">{children}</main>
       <Footer site={site} tagline={footerTagline} services={services} />

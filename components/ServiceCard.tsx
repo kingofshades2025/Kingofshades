@@ -25,6 +25,7 @@ export function ServiceCard({ service }: { service: Service }) {
         icon={service.featuredImageUrl ? undefined : <Icon />}
         sublabel={service.featuredImageUrl ? undefined : `From ${service.startingAt}`}
         imageUrl={service.featuredImageUrl}
+        alt={service.title}
       />
       <div className="flex flex-1 flex-col p-6">
         <h3 className="font-display text-lg font-semibold text-white">
@@ -42,7 +43,7 @@ export function ServiceCard({ service }: { service: Service }) {
           ))}
         </ul>
         <Link
-          href={`/services#${service.slug}`}
+          href={`/services/${service.slug}`}
           className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-gold transition-colors hover:text-gold-light"
         >
           Learn more

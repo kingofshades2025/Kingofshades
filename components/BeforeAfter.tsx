@@ -23,6 +23,9 @@ export function BeforeAfter({
 
   const showAfter = Boolean(afterImage) && !afterFailed;
   const showBefore = Boolean(beforeImage) && !beforeFailed;
+  const subject = label?.trim() || "window tint";
+  const beforeAlt = `Before ${subject}`;
+  const afterAlt = `After ${subject}`;
 
   const afterStyle = showAfter
     ? undefined
@@ -50,7 +53,7 @@ export function BeforeAfter({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={afterImage!}
-            alt=""
+            alt={afterAlt}
             className="h-full w-full object-cover"
             onError={() => setAfterFailed(true)}
           />
@@ -70,7 +73,7 @@ export function BeforeAfter({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={beforeImage!}
-            alt=""
+            alt={beforeAlt}
             className="h-full w-full object-cover"
             onError={() => setBeforeFailed(true)}
           />
