@@ -15,6 +15,10 @@ const mobileNav = mainNav.filter((item) => item.href !== "/booking");
 
 export function Navbar({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
+  // Vercel prerenders `/` with canonical path `/index`. The browser still
+  // hydrates that URL as `/`, so treat them as the same path or the active
+  // link markup differs and React discards the homepage (error #418).
+  const path = !pathname || pathname === "/index" ? "/" : pathname;
   const [scrolled, setScrolled] = useState(false);
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const open = menuPath === pathname;
@@ -51,7 +55,7 @@ export function Navbar({ site }: { site: SiteConfig }) {
   const closeMenu = () => setMenuPath(null);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? path === "/" : path.startsWith(href);
 
   return (
     <>
